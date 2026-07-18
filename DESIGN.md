@@ -1,0 +1,285 @@
+# VPN-Poppy — DESIGN
+
+A personal VPN **on the fly**, in your own AWS. Pick a region, one click, ~60 seconds later
+your phone and laptop are tunnelling through a WireGuard endpoint that only you control —
+and that self-destructs when you're done.
+
+An [AgentsPoppy](https://agentspoppy.com) poppy. Status: **§14**. Source of truth for all
+product/architecture decisions; update this file when a decision changes.
+
+---
+
+## 1. Positioning — why this beats a VPN subscription
+
+- **No VPN company in the path.** A commercial VPN moves your trust from your ISP to a
+  vendor who sees *all* your traffic. VPN-Poppy's endpoint runs in your own AWS account —
+  there is **no third party** in the data path at all.
+- **On the fly, pay cents.** Ephemeral by default: spin up an endpoint for the airport /
+  hotel / café session, tear it down after. A t4g.nano is **~$0.004/hour** — an evening of
+  safe browsing costs about a cent plus data transfer. No $5–13/month subscription.
+- **A server nobody can enter — including you.** The instance runs **no SSH, no exposed
+  ports except WireGuard's single UDP port**, and WireGuard is silent to unauthenticated
+  packets (the box is invisible to port scans). All keys are generated in the app on your
+  machine; nothing needs to log in to the server, ever.
+- **Your own dedicated IP.** Useful on its own: allowlist it on admin panels, staging
+  environments, home NAS. No commercial-VPN shared-IP reputation problems.
+- **Every region AWS has.** Spin an endpoint in Tokyo, Frankfurt, São Paulo — region
+  testing for developers, a local exit for travellers.
+- **AgentsPoppy guarantees:** tagged resources, tight scoped permissions, teardown +
+  leaves-no-trace certification, live cost display.
+
+### 1b. Privacy, precisely — and the honest caveats (ship this in-app)
+
+- **What websites see: your endpoint's AWS IP — never your home IP.** Same protection a
+  commercial VPN gives, with a bonus no vendor can match: **ephemeral-by-default means a
+  fresh IP every launch**, so yesterday's browsing and today's don't share an address.
+- **What your network sees: an encrypted tunnel, nothing else.** The café Wi-Fi, hotel
+  router, or ISP gets no sites, no DNS, no content.
+- **What the VPN vendor sees: nothing — there is no vendor.** Every commercial VPN could
+  observe all your traffic and asks to be trusted not to. Here no third party is in the
+  path at all. This is the strongest privacy claim in the product and it's structural.
+- Like *every* paid VPN, the service is tied to an account (in this case yours, at AWS) —
+  so this is privacy from networks and websites, the thing VPNs are actually for; nobody
+  can honestly sell "invisibility from a legal order," and we don't.
+- **Not a streaming unblocker.** Streaming services blocklist datacenter IP ranges,
+  including AWS. Netflix-from-abroad will mostly not work. We do not market it.
+- **Availability caveat:** in countries that block AWS IP ranges wholesale, the tunnel may
+  not connect at all. Not a censorship-circumvention tool; we don't claim it.
+- **What it IS for:** public-Wi-Fi safety · privacy from your ISP · a fresh IP every
+  session (or a stable personal IP if you keep one running) · region testing · ad-free
+  DNS (premium, §12).
+
+## 2. Architecture
+
+```
+Poppy frontend (AgentsPoppy container)          Your AWS account (chosen region)
+┌──────────────────────────────────┐            ┌─────────────────────────────────┐
+│ generate ALL WireGuard keys      │            │ EC2 t4g.nano (Ubuntu 24.04 arm) │
+│ (X25519, in-app, never leave     │  RunInst.  │  wg0: server privkey + N peers  │
+│  the machine except server's     │ ─────────► │  from user-data at first boot   │
+│  own key inside user-data)       │            │  NAT masquerade, ip_forward     │
+│ build client configs + QR codes  │            │  SG: UDP 51820 in — NOTHING else│
+│ live cost meter (CloudWatch)     │            │  no SSH, no key pair, no IAM    │
+└──────────────────────────────────┘            └─────────────────────────────────┘
+         │  .conf download / QR scan
+         ▼
+   WireGuard apps (iOS/Android/macOS/Windows — official clients)
+```
+
+- **Protocol: WireGuard.** Modern, audited, in the Linux kernel, 4k-line codebase, silent
+  to strangers, first-class official apps on every platform with **QR-code import** on
+  mobile. (OpenVPN/IKEv2 rejected: heavier, uglier clients, no QR story.)
+- **Compute: EC2 t4g.nano** (fallback t3.nano where t4g is absent), Ubuntu 24.04 ARM AMI
+  resolved per region like VM-Poppy's `amis.ts`. ~$3/mo if left running 24/7; cents when
+  ephemeral. *(Lightsail's bundled transfer was considered and rejected for MVP: different
+  API surface + rating story; revisit post-MVP if heavy-use egress cost becomes a real
+  complaint — see §4.)*
+- **One CloudFormation-free, VM-Poppy-style direct EC2 deploy** (RunInstances + SG +
+  tags). No stack needed for a single instance; reuses VM-Poppy's proven launch/teardown/
+  ownership patterns (`tags.ts`, ec2-aware existence).
+- **An Elastic IP per endpoint** (allocated at launch, released at teardown): device
+  configs bake in the endpoint address, so the IP must survive stop/start. AWS bills all
+  public IPv4 ~$0.005/h anyway; the EIP costs the same while running and is what makes
+  "stop" non-destructive. Adds `AllocateAddress`/`AssociateAddress`/`ReleaseAddress` to
+  the permission set (§5).
+
+## 3. The no-SSH key ceremony (the core design)
+
+WireGuard keys are plain X25519 — generated **in the poppy backend on the user's machine**
+(Node `crypto.generateKeyPair('x25519')`; no native deps):
+
+1. At deploy, the poppy generates: 1 server key pair + **N device key pairs** (N = device
+   slots, default 5) + one preshared key per device (quantum-hardening, free).
+2. The **server config** (server private key + the N device public keys) is baked into
+   user-data; first boot writes `/etc/wireguard/wg0.conf`, enables `ip_forward`, sets NAT
+   masquerade, `systemctl enable --now wg-quick@wg0`. No agent, no callback, no SSH.
+3. The **device configs** (device private key + server public key + endpoint IP:51820 +
+   DNS) exist only in the poppy: shown as QR (mobile scans straight into the WireGuard
+   app) and downloadable `.conf` (desktop). Stored in the poppy's local config store so
+   the user can re-show a QR later.
+4. Readiness: VM-Poppy's serial-console sentinel pattern (`GetConsoleOutput` →
+   `VPNPOPPY_READY`), plus the definitive check — the WireGuard app's handshake.
+
+**Consequences:**
+- Nothing can log into the box (no SSH server, no key pair, no `GetPasswordData`).
+- Device slots are **pre-provisioned at deploy** (default 10, selector 1–20 — slots are
+  free keypairs, so the product promise stays "unlimited devices"): adding an 11th device
+  = relaunch (~60 s; device keys are kept in the poppy's config store, so existing
+  devices keep their configs when the endpoint IP is stable — see the EIP note below).
+- The server's private key transits user-data (readable post-hoc by the account's own
+  admins via `DescribeInstanceAttribute` — i.e. by *you*; nobody else). Mitigated by
+  ephemerality + per-deploy fresh keys; documented in the in-app security notes.
+- **Deterministic egress rule (family lesson):** all key generation uses the platform
+  crypto RNG at deploy time; nothing derives from wall-clock (`new Date()`) — re-runs must
+  never silently reuse or duplicate identities.
+
+## 4. Costs — "Show the money" (AGENTS.md §9; load-bearing here)
+
+Egress is the honest headline: **AWS data transfer out is ~$0.09/GB** (first 100 GB/mo of
+the account free). Browsing/email/maps for an evening = well under 1 GB ≈ **cents**.
+50 GB of heavy use ≈ $4.50 — approaching a commercial VPN's monthly fee, so the app must
+show it, not hide it:
+
+- **Live session meter on the card:** instance-hours × hourly price + public-IPv4
+  ~$0.005/h + `NetworkOut` bytes (CloudWatch `GetMetricData`, read-only) × the egress
+  rate → "This session: 3 h · 1.2 GB ≈ **$0.14**". Rates fetched live per the cost
+  doctrine (Price List API / no hardcoding); the free-tier 100 GB noted.
+- **Stopped ≠ free (say it where the Stop button is):** a stopped endpoint keeps billing
+  the kept IP (~$3.65/mo) + disk (~$0.65/mo) ≈ **$4/mo** so its address — and every
+  device's config — survives. **Teardown is the real $0.**
+- Idle-but-running warning after N hours with ~zero egress ("still running in Frankfurt —
+  $0.004/h — tear down?").
+- Ephemeral default (§7) keeps the forgotten-instance bill near zero by construction.
+
+## 5. Permission set & rating
+
+VM-Poppy-class amber, but **smaller**: no key pairs, no password reads, no stop/start
+complexity (MVP: running or destroyed; stop/start post-MVP if wanted).
+
+- `ec2`: `DescribeInstances`, `DescribeImages`, `DescribeVpcs`, `DescribeSubnets`,
+  `DescribeSecurityGroups`, `DescribeAddresses`, `GetConsoleOutput` · `RunInstances`,
+  `CreateSecurityGroup`, `AuthorizeSecurityGroupIngress`, `CreateTags`,
+  `AllocateAddress`, `AssociateAddress` · `StopInstances`, `StartInstances`,
+  `TerminateInstances`, `DeleteSecurityGroup`, `ReleaseAddress` (mutations/deletes
+  `tagged-as-self`)
+- `cloudwatch`: `GetMetricData` (read-only, the cost meter)
+- **No IAM. No instance role. Nothing account-wide.** All three attribution tags on every
+  created resource; teardown hook + `npm run certify` leaves-no-trace before listing.
+- **Family gotchas apply:** verify against the REAL `assessPermissionSet` (substring trap —
+  note `GetConsoleOutput` contains "put", already survived in VM-Poppy) and stay well
+  under the STS packed-policy budget (18 actions here — exactly VM-Poppy's proven DR5
+  ceiling; if the assessor or STS pushes back, `StopInstances`/`StartInstances` are the
+  first candidates to defer to a later release).
+
+## 6. Security & privacy notes (surface in-app, SecurityInfo-style)
+
+- Single exposed port: UDP 51820, and WireGuard answers only valid keys — the box is
+  effectively invisible. No inbound TCP at all.
+- Per-deploy fresh keys; preshared keys per device; client configs never leave the app
+  except by the user's own QR/download.
+- DNS inside the tunnel points at the endpoint's resolver (unbound, installed at boot) so
+  the café Wi-Fi can't see your lookups. (Premium turns this resolver into an ad/tracker
+  blocker — §12.)
+- The §1b privacy panel ("what websites / your network / nobody sees" + the streaming
+  caveat) shows on the deploy screen the first time, dismissible after.
+- A long-running endpoint keeps one IP — uniquely yours, so it becomes a stable
+  identifier across sites over time (like a home IP). The in-app copy nudges: for
+  privacy, prefer ephemeral (fresh IP per session); for allowlisting, keep it running.
+- Kill-switch guidance: the official WireGuard apps' on-demand/always-on settings are the
+  kill switch; we link the how-to per platform rather than pretending to control it.
+
+## 7. UX
+
+- **Deploy card:** region picker (flag + city names, latency hint "closest to you" via a
+  tiny ping probe), device-slots selector (default 10, "unlimited devices — add more with
+  a quick relaunch"), lifecycle exactly like VM-Poppy: **auto-teardown after N hours the
+  user submits (prefilled 8, editable)** vs "keep until I stop or tear it down". One
+  primary button: **"Launch VPN"**.
+- **Running card:** region + IP (CopyButton), live cost meter (§4), per-device rows —
+  "📱 Phone · show QR" / "💻 Laptop · download .conf" (names editable), handshake status
+  per device (parsed? No — server-side wg state is unreadable without SSH by design; we
+  show "config issued" and teach the in-app check: the WireGuard app shows the
+  handshake). **Stop / Start / Tear down** with the VM-Poppy vocabulary — the Stop
+  confirm carries the "stopped still bills ≈$4/mo (kept IP + disk); teardown = $0" line.
+- **Empty state teaches the product:** "A VPN endpoint that exists only while you need
+  it. Launch one before you join the airport Wi-Fi; destroy it after."
+- Design kit `poppy.css`, `poppyAccent("com.vpnpoppy.desktop")`, plain language, no jargon
+  ("endpoint" explained as "your private tunnel exit").
+
+## 8. Reuse map (read-only references)
+
+- `~/Projects/vm-poppy` — repo layout, `build-sidecar.mjs` (+ `--win32`), `tags.ts`
+  ownership/attribution, `amis.ts` per-region AMI resolve, serial-console sentinel,
+  teardown/certify flow, `CopyButton`, launch-form patterns, DR1–DR6 lessons.
+- `~/Projects/agentspoppy/AGENTS.md` — the contract (rating, teardown, tags, §9 costs).
+- `~/Projects/traffic-poppy/DESIGN.md` — the honesty-section style this doc mirrors.
+- Packing/catalogue: `agentspoppy/scripts/pack-extension.mjs` + catalog-seed flow.
+
+## 9. MVP vs post-MVP
+
+**MVP (P0–P2):** one endpoint at a time per region · t4g.nano/t3.nano · 10-slot key
+ceremony + QR/.conf · EIP-backed stop/start + teardown + user-set auto-teardown hours ·
+cost meter (incl. the stopped-costs honesty) · §1b privacy panel · certify green.
+**Post-MVP:** multiple simultaneous endpoints ("fleet") · IPv6 inside the tunnel ·
+Lightsail egress-bundle variant · split-tunnel helper profiles.
+
+## 10. Open questions for the founder — ✅ ALL ANSWERED 2026-07-18, see §11
+
+1. **Name.** `VPN-Poppy` (matches VM-Poppy convention). OK, or something friendlier
+   ("TunnelPoppy")?
+2. **Device slots default 5** and "add a device = redeploy (regenerates existing device
+   configs too — re-scan QRs)" — acceptable MVP trade for the no-SSH guarantee?
+3. **Premium feature (pick ONE, §12):** my recommendation is **(a) ad/tracker-blocking
+   DNS**.
+4. **Ephemeral default TTL 8 h** (self-destruct), "keep running" as the explicit opt-out —
+   right default?
+5. **Premium price point** — anchor: commercial VPNs $5–13/mo; we're the "no vendor"
+   option. My instinct: **$2.5–3/mo or $25/yr** per deployment via the AgentsPoppy
+   checkout.
+6. **§1b privacy framing sign-off** *(revised per founder feedback 2026-07-18)*: lead with
+   what it protects (websites see the AWS IP, fresh per launch; network sees only a
+   tunnel; **no vendor exists to see anything**); one neutral account-linked line like any
+   paid VPN; never market streaming unblocking — confirmed?
+
+## 11. Locked decisions (founder, 2026-07-18) — final for the implementation session
+
+1. **Name: VPN-Poppy.** "VPN" is clear, "Poppy" makes it friendly.
+2. **Unlimited devices** as the product promise; **10 slots pre-provisioned at launch**
+   (selector 1–20), adding more = quick relaunch. No artificial device limit — slots are
+   free keypairs; the pre-provisioning exists only because of the no-SSH key ceremony.
+3. **Premium = Shielded DNS** (ad/tracker/malware blocking at the endpoint's resolver).
+   NOT an AWS paid service — free software on the same instance, **zero extra AWS cost to
+   the user**; blocklists refreshed at each boot.
+4. **Lifecycle = VM-Poppy parity.** The user either stops / tears down whenever they wish,
+   or sets an **automatic teardown after N hours they submit** (launch form prefills 8,
+   fully editable). The app states plainly that **"stop" does not pause all costs**
+   (kept IP + disk keep billing, ≈$4/mo; teardown = $0). To make stop survivable, each
+   endpoint gets an **Elastic IP** so the IP — and every device's config — survives
+   stop/start; the EIP is released at teardown.
+5. **Price: $14.99/year per deployment, billed yearly** (≈ $1.25/month) via the
+   AgentsPoppy first-party checkout (`kind=subscription`). Deliberately under commercial
+   VPNs ($5–13/mo) since we don't serve the streaming use-case.
+6. **Privacy framing (§1b): lead with strength.** More *private* than any commercial VPN —
+   because there is no VPN company to trust: websites see only the endpoint IP (fresh
+   every launch when ephemeral), the local network sees only a tunnel, and no vendor
+   exists in the path. One neutral account-linked sentence (true of every paid VPN). The
+   only warning box is **streaming/datacenter-IP + country availability**. Copy uses
+   "private" as the load-bearing word (accurate and strong) rather than promising
+   "anonymity" as a technical guarantee.
+
+## 12. Monetization — free core + ONE premium
+
+**Free forever:** launch/stop/teardown, all regions, unlimited devices, QR/.conf, cost
+meter, the full privacy design.
+**Premium — LOCKED (§11.3): Shielded DNS, $14.99/year per deployment, billed yearly.**
+The endpoint's resolver becomes an ad/tracker/malware-domain blocker (curated blocklists,
+refreshed at boot): "block ads on every device, in every app, while connected — no
+browser extension". NOT an AWS paid service — free software on the same instance, zero
+extra AWS cost to the user; pure user-data addition, zero new permissions. Sold via the
+AgentsPoppy first-party checkout (`kind=subscription`), like TrafficPoppy's True Reach.
+*(Fleet mode and scheduled always-on remain free-tier post-MVP candidates, not premium.)*
+
+## 13. Plan
+
+- **P0 — walking skeleton:** scaffold (vm-poppy layout) → manifest + permission set
+  verified against the real assessor → launch a bare t4g.nano with sentinel → card +
+  teardown → `npm run certify` green → dev-install visible in AgentsPoppy.
+- **P1 — the tunnel:** key ceremony (X25519 in Node, unit-tested against `wg` vectors) →
+  WireGuard user-data (server conf + NAT + unbound) → SG UDP 51820 → EIP allocate/
+  associate → QR + .conf issue → **live acceptance: phone on cellular, handshake, browse,
+  IP = endpoint**.
+- **P2 — honest economics + lifecycle:** cost meter (CloudWatch + live rates, incl.
+  IPv4) · stop/start with the stopped-costs line · user-set auto-teardown hours ·
+  idle warning · §1b privacy panel · region latency hints.
+- **P3 — polish + catalogue:** empty-state teaching, device renaming, per-region AMI
+  table hardening, `--win32` build, pack + catalogue listing, README/screenshots.
+- **P4 — premium: Shielded DNS** ($14.99/yr) + AgentsPoppy checkout wiring.
+- Every phase ends with founder check-in; every live test in the founder's account is
+  torn down + verified clean (working agreements, as CLAUDE.md will encode).
+
+## 14. Status
+
+**Design COMPLETE — all §10 questions answered and locked in §11 (2026-07-18).**
+Next: CLAUDE.md + README + .gitignore → repo push → implementation handoff prompt
+(separate session, per the TrafficPoppy delegation model — this planning session does
+not implement).
