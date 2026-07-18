@@ -7,6 +7,8 @@ import { EC2Client } from "@aws-sdk/client-ec2";
 import { readBootstrap, brokerCredentialsProvider } from "./boot";
 import { Ec2Service } from "./ec2";
 import { loadUsedRegions, rememberRegion } from "./store";
+import { loadDeployment, renameDevice } from "./keystore";
+import { buildDeviceConfig } from "./wireguard";
 import type { EndpointConfig } from "./types";
 
 const boot = readBootstrap();
@@ -102,6 +104,33 @@ const server = createServer(async (req, res) => {
         if (method === "GET" && parts[2] === "status") return json(res, 200, await svcFor(region).status(id));
         if (method === "POST" && parts[2] === "teardown") {
           await svcFor(region).teardownEndpoint(id);
+          return json(res, 200, { ok: true });
+        }
+        // Device configs: the keystore holds the private keys; the live IP comes from EC2.
+        if (method === "GET" && parts[2] === "devices" && parts.length === 3) {
+          const deployment = loadDeployment(id);
+          if (!deployment) {
+            return json(res, 404, {
+              error: "The device configs for this endpoint were set up on another computer, so they aren't available here.",
+            });
+          }
+          const endpointIp = await svcFor(region).endpointPublicIp(id);
+          const devices = deployment.devices.map((d, index) => ({
+            index,
+            name: d.name,
+            address: d.address,
+            conf: endpointIp ? buildDeviceConfig({ device: d, serverPublicKey: deployment.serverPublicKey, endpointIp }) : null,
+          }));
+          return json(res, 200, { endpointIp: endpointIp ?? null, devices });
+        }
+        // Rename a device (persists the label): POST /endpoints/:id/devices/:index/rename
+        if (method === "POST" && parts[2] === "devices" && parts[4] === "rename" && parts.length === 5) {
+          const index = Number(parts[3]);
+          const body = (await readBody(req)) as { name?: string } | undefined;
+          const name = body?.name?.trim();
+          if (!name) return json(res, 400, { error: "A device needs a name." });
+          const updated = renameDevice(id, index, name);
+          if (!updated) return json(res, 404, { error: "That device isn't in this endpoint." });
           return json(res, 200, { ok: true });
         }
       }

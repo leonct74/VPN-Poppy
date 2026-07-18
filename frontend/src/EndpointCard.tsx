@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
 import { CopyButton } from "./CopyButton";
+import { DeviceConfigs } from "./DeviceConfigs";
 import { host } from "./host";
 import { regionLabel, type EndpointStatus, type EndpointSummary } from "./types";
 
@@ -106,10 +107,14 @@ export function EndpointCard({ endpoint, onChanged }: Props) {
           <div className="muted">Waiting for a public IP…</div>
         )}
         <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-          Your device configs (QR codes for phones, <span className="mono">.conf</span> files for laptops) arrive in the
-          next version — this build brings the endpoint up and proves clean teardown.
+          UDP is the only open port. WireGuard stays silent to anything without a valid key, so the box is invisible to
+          port scans.
         </div>
       </div>
+
+      {(endpoint.state === "running" || endpoint.state === "pending") && (
+        <DeviceConfigs endpointId={endpoint.instanceId} hasIp={!!ip} />
+      )}
 
       {err && <div className="banner err" style={{ marginBottom: 10 }}>{err}</div>}
 

@@ -1,7 +1,7 @@
 // Typed wrappers over host.invokeBackend for VPN-Poppy's backend routes.
 
 import { host } from "./host";
-import type { EndpointConfig, EndpointStatus, EndpointSummary, Meta } from "./types";
+import type { DevicesResponse, EndpointConfig, EndpointStatus, EndpointSummary, Meta } from "./types";
 
 export const api = {
   meta: () => host.invokeBackend<Meta>({ method: "GET", path: "/meta" }),
@@ -16,4 +16,10 @@ export const api = {
 
   teardown: (id: string) =>
     host.invokeBackend<{ ok: true }>({ method: "POST", path: `/endpoints/${id}/teardown` }),
+
+  devices: (id: string) =>
+    host.invokeBackend<DevicesResponse>({ method: "GET", path: `/endpoints/${id}/devices` }),
+
+  renameDevice: (id: string, index: number, name: string) =>
+    host.invokeBackend<{ ok: true }>({ method: "POST", path: `/endpoints/${id}/devices/${index}/rename`, body: { name } }),
 };

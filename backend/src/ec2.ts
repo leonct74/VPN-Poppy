@@ -32,6 +32,8 @@ import {
   TAG_LIFECYCLE,
 } from "./tags";
 import { generateUserData } from "./userdata";
+import { runCeremony } from "./wireguard";
+import { saveDeployment, deleteDeployment } from "./keystore";
 import { READY_SENTINEL, WIREGUARD_PORT, type EndpointConfig, type EndpointStatus, type EndpointSummary } from "./types";
 
 export interface Ec2Context {
@@ -60,7 +62,11 @@ export class Ec2Service {
     const tag = shortId();
     const securityGroupId = await this.createSecurityGroup(config, vpcId, tag);
 
-    const userData = generateUserData({ config });
+    // The key ceremony: 1 server keypair + N device keypairs/PSKs (DESIGN §3). The server
+    // config (server private key + device PUBLIC keys) is baked into user-data; device
+    // private keys never reach the box — they're persisted in the keystore below.
+    const ceremony = runCeremony(config.deviceSlots);
+    const userData = generateUserData({ config, ceremony });
     const name = config.name?.trim() || "VPN endpoint";
     const lifecycle = config.autoTeardownHours && config.autoTeardownHours > 0 ? "ephemeral" : "persistent";
     const resourceTags = [
@@ -97,7 +103,25 @@ export class Ec2Service {
 
     const inst = res.Instances?.[0];
     if (!inst?.InstanceId) throw new Error("EC2 did not return a launched endpoint.");
+
+    // Persist the deployment's key material so the user can re-show device QRs later — the
+    // ONLY copy of the device private keys (the box has only their public keys). The server
+    // private key is deliberately NOT persisted; it lives only in the box's user-data.
+    saveDeployment({
+      instanceId: inst.InstanceId,
+      region: this.ctx.region,
+      serverPublicKey: ceremony.serverPublicKey,
+      devices: ceremony.devices,
+      createdAt: new Date().toISOString(),
+    });
+
     return this.toSummary(inst);
+  }
+
+  /** The endpoint's current public IPv4 (for rendering device .conf/QR — DESIGN §3.3). */
+  async endpointPublicIp(instanceId: string): Promise<string | undefined> {
+    const inst = await this.getOwnInstance(instanceId);
+    return inst.PublicIpAddress;
   }
 
   private async rootDeviceName(imageId: string): Promise<string> {
@@ -177,6 +201,7 @@ export class Ec2Service {
   async teardownEndpoint(instanceId: string): Promise<void> {
     const inst = await this.getOwnInstance(instanceId);
     await this.ec2.send(new TerminateInstancesCommand({ InstanceIds: [instanceId] }));
+    deleteDeployment(instanceId); // drop the local key material for a gone endpoint
     const sgId = inst.SecurityGroups?.[0]?.GroupId;
     void this.deleteSecurityGroupWithRetry(sgId);
   }
@@ -195,6 +220,7 @@ export class Ec2Service {
     if (instanceIds.length > 0) {
       await this.ec2.send(new TerminateInstancesCommand({ InstanceIds: instanceIds }));
       await this.waitTerminated(instanceIds);
+      for (const id of instanceIds) deleteDeployment(id); // drop local key material too
     }
 
     // Also sweep any of this APP's tagged SGs not attached to a listed instance (app-scoped,

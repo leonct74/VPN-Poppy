@@ -25,6 +25,20 @@ export interface EndpointStatus {
   ready: boolean;
 }
 
+/** One device's config as rendered by the backend (private key included — it's the user's). */
+export interface DeviceConfig {
+  index: number;
+  name: string;
+  address: string;
+  /** The full WireGuard .conf text, or null while the endpoint has no public IP yet. */
+  conf: string | null;
+}
+
+export interface DevicesResponse {
+  endpointIp: string | null;
+  devices: DeviceConfig[];
+}
+
 export interface Meta {
   account: { accountId: string; region: string };
   connectionId: string;
