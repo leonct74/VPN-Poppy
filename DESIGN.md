@@ -286,6 +286,43 @@ AgentsPoppy first-party checkout (`kind=subscription`), like TrafficPoppy's True
 ## 14. Status
 
 **Design COMPLETE — all §10 questions answered and locked in §11 (2026-07-18).**
-Next: CLAUDE.md + README + .gitignore → repo push → implementation handoff prompt
-(separate session, per the TrafficPoppy delegation model — this planning session does
-not implement).
+
+### P0 — walking skeleton: IN PROGRESS (implementation session, 2026-07-18)
+
+Built and green locally; **not yet live-tested** (that gate needs founder confirmation
+before any AWS mutation, per CLAUDE.md working agreements):
+
+- **Scaffold** on the vm-poppy layout (`frontend/ backend/ scripts/`), workspaces,
+  `build-sidecar.mjs` (+ `--win32`), `.claude/launch.json`.
+- **Manifest** = the locked §5 permission set, **13 actions**, verified **amber /
+  zero-red** against the REAL `assessPermissionSet`. Committed gates
+  `scripts/{validate-manifest,assess-permissions}.mjs` import the host's compiled
+  core/extension-sdk directly (via a shared append-`.js` resolve hook) so the check is
+  against the code the host runs; `assess-permissions` fails CI on any red.
+- **Backend sidecar**: no-SSH bare-endpoint launch (no key pair, only UDP 51820),
+  teardown-only lifecycle (`InstanceInitiatedShutdownBehavior=terminate`), readiness via
+  `GetConsoleOutput` → `VPNPOPPY_READY`, per-region clients, teardown hook. 11 unit tests
+  lock the no-SSH + single-UDP-port invariants. Sidecar builds to a native arm64 SEA.
+- **Frontend**: deploy card (region/slots/lifecycle + cost hint), endpoint card with
+  type-to-confirm teardown, §1b lead-with-strength copy; verified end-to-end vs a mock
+  host bridge. Accent `#e8b8c9`.
+- **Dev-installed** into `~/.agentspoppy/extensions/com.vpnpoppy.desktop` (layout verified).
+
+**Implementation decisions recorded here (per the working agreement):**
+1. **Declare the full locked 13-action set now**, including `cloudwatch:GetMetricData`
+   (unused until P2's cost meter), rather than a P0 subset — the manifest is the
+   founder-locked design, and declaring it once avoids the connection revoke+re-approve
+   churn a scope change triggers each phase.
+2. **Per-region EC2 clients + a persisted region pointer** (`backend/src/store.ts`): we
+   persist only *which regions* we've launched into (never endpoint state — that's read
+   live from EC2), so background-resume (AGENTS.md §5) and the teardown sweep (§4) stay
+   correct after an app restart, and an endpoint in a non-home region is never stranded.
+3. **P0 opens the real endpoint firewall** (UDP 51820 → 0.0.0.0/0) from the first commit,
+   even though WireGuard itself lands in P1 — so teardown of the true SG shape is
+   exercised now and the no-SSH invariant holds from the start.
+4. **No per-file SPDX headers** — matching vm-poppy's actual convention (LICENSE file +
+   `package.json` license field; only the host repo carries per-file headers).
+
+**Remaining P0 (founder-gated):** relaunch AgentsPoppy → confirm amber rating + empty
+state in-app → live launch of a bare t4g.nano → `VPNPOPPY_READY` sentinel → teardown +
+verify account clean → `npm run certify` green. Then P1 (the tunnel).
