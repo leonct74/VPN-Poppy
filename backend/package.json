@@ -1,0 +1,21 @@
+{
+  "name": "@vpnpoppy/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "VPN-Poppy backend sidecar — EC2 endpoint provisioning via AgentsPoppy-brokered credentials.",
+  "main": "src/server.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ec2": "^3.700.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

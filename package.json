@@ -1,0 +1,33 @@
+{
+  "name": "vpn-poppy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A personal VPN on the fly in your own AWS — one-click WireGuard endpoints, no SSH, teardown when you're done. An AgentsPoppy extension.",
+  "type": "module",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build:frontend && npm run build:sidecar",
+    "build:frontend": "npm run build -w @vpnpoppy/frontend",
+    "build:sidecar": "node scripts/build-sidecar.mjs",
+    "validate-manifest": "node scripts/validate-manifest.mjs",
+    "assess-permissions": "node scripts/assess-permissions.mjs",
+    "install-dev": "node /Users/mt/Projects/agentspoppy/scripts/install-dev-extension.mjs --src . --frontend frontend/dist --backend backend/vpnpoppy-sidecar",
+    "certify": "npm --prefix /Users/mt/Projects/agentspoppy run certify -- --extension /Users/mt/Projects/vpn-poppy --yes"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "postject": "^1.0.0-alpha.6"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "optionalDependencies": {
+    "@esbuild/darwin-arm64": "^0.24.0",
+    "@esbuild/darwin-x64": "^0.24.2",
+    "@rollup/rollup-darwin-arm64": "^4.62.2",
+    "@rollup/rollup-darwin-x64": "^4.62.2"
+  }
+}
