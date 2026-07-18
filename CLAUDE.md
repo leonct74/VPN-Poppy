@@ -12,8 +12,9 @@ Founder decisions live in DESIGN §11 and are final unless the founder revisits 
 
 A personal VPN **on the fly** in the user's own AWS: one click → a WireGuard endpoint on a
 t4g.nano (no SSH, one silent UDP port, all keys generated in-app) → QR/.conf for unlimited
-devices → live cost meter → stop (EIP-backed) or teardown, or auto-teardown after N hours.
-Free core + one premium: **Shielded DNS** (ad/tracker-blocking resolver, $14.99/yr).
+devices → live cost meter → teardown whenever, or auto-teardown after N hours the user
+sets. **No stop state by design** (running or gone, §11.4). Free core + one premium:
+**Shielded DNS** (ad/tracker-blocking resolver, $14.99/yr).
 Full rationale, locked decisions and phases P0–P4: `DESIGN.md` §11–13.
 
 ## Read these before coding (in order)
@@ -36,18 +37,18 @@ Full rationale, locked decisions and phases P0–P4: `DESIGN.md` §11–13.
   poppy backend on the user's machine**; the server sees its config once, via user-data.
   Any change that opens another port or adds a login path is a design regression —
   escalate to the founder, don't ship it.
-- **Elastic IP lifecycle:** allocate at launch, associate, **release at teardown** —
-  a leaked EIP bills forever and fails certify. Teardown = instance + SG + EIP, verified.
+- **Teardown-only lifecycle (§11.4):** no Stop button, no Elastic IP apparatus — the
+  product is running or gone. Teardown = instance + security group, verified clean.
+  Don't reintroduce stop "for convenience"; it was deliberately dropped because a stopped
+  instance can't be cost-free.
 - **Honest costs everywhere** (AGENTS.md §9): hourly + IPv4 + live egress on the card;
-  the Stop confirm carries "stopped still bills ≈$4/mo (kept IP + disk); teardown = $0".
-  Rates from the Price List API — never hardcoded.
+  idle-warning nudge toward teardown. Rates from the Price List API — never hardcoded.
 - **§1b privacy copy rules:** lead with what it protects (endpoint IP shown to sites,
   fresh per launch; tunnel-only to the local network; **no vendor in the path**); the
   load-bearing word is "private", not guaranteed "anonymity"; never market streaming
   unblocking. The only warning box is streaming/datacenter-IP + country availability.
-- **Rating:** VM-Poppy-class amber; 18 EC2/CloudWatch actions = exactly the DR5 packed-
-  policy ceiling that is PROVEN to vend. If STS or the assessor pushes back, defer
-  `StopInstances`/`StartInstances` first. Verify against the REAL `assessPermissionSet`
+- **Rating:** VM-Poppy-class amber; 13 actions total — comfortably under the DR5 packed-
+  policy ceiling of 18. Verify against the REAL `assessPermissionSet`
   (substring trap: `GetConsoleOutput` contains "put" — survived in VM-Poppy, re-verify).
 - Every create carries the three attribution tags; **teardown hook required** and
   `npm run certify` (leaves-no-trace, incl. the EIP) must pass a real
@@ -76,7 +77,7 @@ Full rationale, locked decisions and phases P0–P4: `DESIGN.md` §11–13.
 - **Explicit founder confirmation before any AWS command that creates/changes/deletes
   resources.** Read-only calls are fine.
 - Live tests run in the founder's account → **tear down afterwards and verify clean**
-  (instance, SG, EIP — the EIP is the new leak risk).
+  (instance + SG).
 - Live tunnel acceptance (DESIGN §13 P1) needs the founder's phone — coordinate, don't
   simulate it away.
 - The founder decides product questions; implementation questions get decided here and
@@ -91,6 +92,6 @@ Full rationale, locked decisions and phases P0–P4: `DESIGN.md` §11–13.
 
 Design complete + locked (DESIGN §11, 2026-07-18). **Current phase: P0 — walking
 skeleton** (scaffold → manifest vs real assessor → bare-instance launch + sentinel →
-teardown incl. EIP → certify green → dev-install visible in AgentsPoppy).
+teardown → certify green → dev-install visible in AgentsPoppy).
 Before the repo ever goes public: the pre-public checklist in
 `agentspoppy/docs/ROADMAP.md` (history secret scan, FSL headers, no personal paths).

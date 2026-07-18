@@ -77,11 +77,12 @@ Poppy frontend (AgentsPoppy container)          Your AWS account (chosen region)
 - **One CloudFormation-free, VM-Poppy-style direct EC2 deploy** (RunInstances + SG +
   tags). No stack needed for a single instance; reuses VM-Poppy's proven launch/teardown/
   ownership patterns (`tags.ts`, ec2-aware existence).
-- **An Elastic IP per endpoint** (allocated at launch, released at teardown): device
-  configs bake in the endpoint address, so the IP must survive stop/start. AWS bills all
-  public IPv4 ~$0.005/h anyway; the EIP costs the same while running and is what makes
-  "stop" non-destructive. Adds `AllocateAddress`/`AssociateAddress`/`ReleaseAddress` to
-  the permission set (§5).
+- **Running or gone — no "stop" state (§11.4).** A stopped instance can't be cost-free
+  (kept IP + disk keep billing), so the product offers only the honest pair: running
+  (stable IP while it lives) or torn down ($0). Relaunching takes ~60 s; device keys are
+  reused from the poppy's store, so re-adding a device is just re-scanning the fresh QR.
+  This also drops the Elastic-IP apparatus entirely — simpler teardown, smaller
+  permission set.
 
 ## 3. The no-SSH key ceremony (the core design)
 
@@ -104,8 +105,12 @@ WireGuard keys are plain X25519 — generated **in the poppy backend on the user
 - Nothing can log into the box (no SSH server, no key pair, no `GetPasswordData`).
 - Device slots are **pre-provisioned at deploy** (default 10, selector 1–20 — slots are
   free keypairs, so the product promise stays "unlimited devices"): adding an 11th device
-  = relaunch (~60 s; device keys are kept in the poppy's config store, so existing
-  devices keep their configs when the endpoint IP is stable — see the EIP note below).
+  = relaunch (~60 s; device keys persist in the poppy's config store, and after any
+  relaunch devices just re-scan the fresh QR for the new endpoint IP).
+- **Market context (2026-07 research):** the premium incumbents all cap devices —
+  Mullvad 5, CyberGhost 7, ExpressVPN 8 (14 only top-tier), NordVPN 10, Proton VPN 10;
+  only Surfshark/PIA/IPVanish are unlimited. VPN-Poppy's unlimited is *structural* (no
+  vendor exists to count connections) — use this contrast in marketing copy.
 - The server's private key transits user-data (readable post-hoc by the account's own
   admins via `DescribeInstanceAttribute` — i.e. by *you*; nobody else). Mitigated by
   ephemerality + per-deploy fresh keys; documented in the in-app security notes.
@@ -124,11 +129,9 @@ show it, not hide it:
   ~$0.005/h + `NetworkOut` bytes (CloudWatch `GetMetricData`, read-only) × the egress
   rate → "This session: 3 h · 1.2 GB ≈ **$0.14**". Rates fetched live per the cost
   doctrine (Price List API / no hardcoding); the free-tier 100 GB noted.
-- **Stopped ≠ free (say it where the Stop button is):** a stopped endpoint keeps billing
-  the kept IP (~$3.65/mo) + disk (~$0.65/mo) ≈ **$4/mo** so its address — and every
-  device's config — survives. **Teardown is the real $0.**
 - Idle-but-running warning after N hours with ~zero egress ("still running in Frankfurt —
-  $0.004/h — tear down?").
+  $0.004/h — tear down?"). There is deliberately no "stop" state: stopped instances keep
+  billing (kept IP + disk), so the app offers only running or torn-down (§11.4).
 - Ephemeral default (§7) keeps the forgotten-instance bill near zero by construction.
 
 ## 5. Permission set & rating
@@ -137,19 +140,17 @@ VM-Poppy-class amber, but **smaller**: no key pairs, no password reads, no stop/
 complexity (MVP: running or destroyed; stop/start post-MVP if wanted).
 
 - `ec2`: `DescribeInstances`, `DescribeImages`, `DescribeVpcs`, `DescribeSubnets`,
-  `DescribeSecurityGroups`, `DescribeAddresses`, `GetConsoleOutput` · `RunInstances`,
-  `CreateSecurityGroup`, `AuthorizeSecurityGroupIngress`, `CreateTags`,
-  `AllocateAddress`, `AssociateAddress` · `StopInstances`, `StartInstances`,
-  `TerminateInstances`, `DeleteSecurityGroup`, `ReleaseAddress` (mutations/deletes
-  `tagged-as-self`)
+  `DescribeSecurityGroups`, `GetConsoleOutput` · `RunInstances`, `CreateSecurityGroup`,
+  `AuthorizeSecurityGroupIngress`, `CreateTags` · `TerminateInstances`,
+  `DeleteSecurityGroup` (mutations/deletes `tagged-as-self`)
 - `cloudwatch`: `GetMetricData` (read-only, the cost meter)
 - **No IAM. No instance role. Nothing account-wide.** All three attribution tags on every
   created resource; teardown hook + `npm run certify` leaves-no-trace before listing.
 - **Family gotchas apply:** verify against the REAL `assessPermissionSet` (substring trap —
   note `GetConsoleOutput` contains "put", already survived in VM-Poppy) and stay well
-  under the STS packed-policy budget (18 actions here — exactly VM-Poppy's proven DR5
-  ceiling; if the assessor or STS pushes back, `StopInstances`/`StartInstances` are the
-  first candidates to defer to a later release).
+  under the STS packed-policy budget (13 actions here — comfortably below VM-Poppy's
+  proven DR5 ceiling of 18; the teardown-only lifecycle in §11.4 is what bought the
+  headroom).
 
 ## 6. Security & privacy notes (surface in-app, SecurityInfo-style)
 
@@ -179,8 +180,9 @@ complexity (MVP: running or destroyed; stop/start post-MVP if wanted).
   "📱 Phone · show QR" / "💻 Laptop · download .conf" (names editable), handshake status
   per device (parsed? No — server-side wg state is unreadable without SSH by design; we
   show "config issued" and teach the in-app check: the WireGuard app shows the
-  handshake). **Stop / Start / Tear down** with the VM-Poppy vocabulary — the Stop
-  confirm carries the "stopped still bills ≈$4/mo (kept IP + disk); teardown = $0" line.
+  handshake). One lifecycle action: **Tear down** (VM-Poppy terminate vocabulary). No
+  Stop button by design — relaunching is 60 s and $0, stopping would silently keep
+  billing (§11.4).
 - **Empty state teaches the product:** "A VPN endpoint that exists only while you need
   it. Launch one before you join the airport Wi-Fi; destroy it after."
 - Design kit `poppy.css`, `poppyAccent("com.vpnpoppy.desktop")`, plain language, no jargon
@@ -198,8 +200,8 @@ complexity (MVP: running or destroyed; stop/start post-MVP if wanted).
 ## 9. MVP vs post-MVP
 
 **MVP (P0–P2):** one endpoint at a time per region · t4g.nano/t3.nano · 10-slot key
-ceremony + QR/.conf · EIP-backed stop/start + teardown + user-set auto-teardown hours ·
-cost meter (incl. the stopped-costs honesty) · §1b privacy panel · certify green.
+ceremony + QR/.conf · teardown + user-set auto-teardown hours (no stop state, §11.4) ·
+cost meter · §1b privacy panel · certify green.
 **Post-MVP:** multiple simultaneous endpoints ("fleet") · IPv6 inside the tunnel ·
 Lightsail egress-bundle variant · split-tunnel helper profiles.
 
@@ -227,15 +229,20 @@ Lightsail egress-bundle variant · split-tunnel helper profiles.
 2. **Unlimited devices** as the product promise; **10 slots pre-provisioned at launch**
    (selector 1–20), adding more = quick relaunch. No artificial device limit — slots are
    free keypairs; the pre-provisioning exists only because of the no-SSH key ceremony.
+   **Confirmed marketing asset (market research 2026-07-18):** premium incumbents cap
+   devices — Mullvad 5, CyberGhost 7, ExpressVPN 8 (14 top-tier only), NordVPN 10,
+   Proton VPN 10 — and enforce the cap on their servers. VPN-Poppy's unlimited is
+   structural: no vendor exists to count your connections. Use in listing copy.
 3. **Premium = Shielded DNS** (ad/tracker/malware blocking at the endpoint's resolver).
    NOT an AWS paid service — free software on the same instance, **zero extra AWS cost to
    the user**; blocklists refreshed at each boot.
-4. **Lifecycle = VM-Poppy parity.** The user either stops / tears down whenever they wish,
-   or sets an **automatic teardown after N hours they submit** (launch form prefills 8,
-   fully editable). The app states plainly that **"stop" does not pause all costs**
-   (kept IP + disk keep billing, ≈$4/mo; teardown = $0). To make stop survivable, each
-   endpoint gets an **Elastic IP** so the IP — and every device's config — survives
-   stop/start; the EIP is released at teardown.
+4. **Lifecycle = teardown-only** *(founder revised 2026-07-18, superseding the earlier
+   stop/start idea)*: the user tears down whenever they wish, or sets an **automatic
+   teardown after N hours they submit** (launch form prefills 8, fully editable). "Stop"
+   was dropped because it cannot be made cost-free (a stopped instance keeps billing its
+   kept IP + disk) — rather than ship a button with a cost asterisk, the product offers
+   only the honest pair: **running, or gone ($0)**. Relaunch is ~60 s; no Elastic IP
+   apparatus needed, and the permission set shrinks to 13 actions.
 5. **Price: $14.99/year per deployment, billed yearly** (≈ $1.25/month) via the
    AgentsPoppy first-party checkout (`kind=subscription`). Deliberately under commercial
    VPNs ($5–13/mo) since we don't serve the streaming use-case.
@@ -249,8 +256,8 @@ Lightsail egress-bundle variant · split-tunnel helper profiles.
 
 ## 12. Monetization — free core + ONE premium
 
-**Free forever:** launch/stop/teardown, all regions, unlimited devices, QR/.conf, cost
-meter, the full privacy design.
+**Free forever:** launch/teardown, all regions, unlimited devices, QR/.conf, cost meter,
+the full privacy design.
 **Premium — LOCKED (§11.3): Shielded DNS, $14.99/year per deployment, billed yearly.**
 The endpoint's resolver becomes an ad/tracker/malware-domain blocker (curated blocklists,
 refreshed at boot): "block ads on every device, in every app, while connected — no
@@ -265,12 +272,11 @@ AgentsPoppy first-party checkout (`kind=subscription`), like TrafficPoppy's True
   verified against the real assessor → launch a bare t4g.nano with sentinel → card +
   teardown → `npm run certify` green → dev-install visible in AgentsPoppy.
 - **P1 — the tunnel:** key ceremony (X25519 in Node, unit-tested against `wg` vectors) →
-  WireGuard user-data (server conf + NAT + unbound) → SG UDP 51820 → EIP allocate/
-  associate → QR + .conf issue → **live acceptance: phone on cellular, handshake, browse,
-  IP = endpoint**.
+  WireGuard user-data (server conf + NAT + unbound) → SG UDP 51820 → QR + .conf issue →
+  **live acceptance: phone on cellular, handshake, browse, IP = endpoint**.
 - **P2 — honest economics + lifecycle:** cost meter (CloudWatch + live rates, incl.
-  IPv4) · stop/start with the stopped-costs line · user-set auto-teardown hours ·
-  idle warning · §1b privacy panel · region latency hints.
+  IPv4) · user-set auto-teardown hours · idle warning · §1b privacy panel · region
+  latency hints.
 - **P3 — polish + catalogue:** empty-state teaching, device renaming, per-region AMI
   table hardening, `--win32` build, pack + catalogue listing, README/screenshots.
 - **P4 — premium: Shielded DNS** ($14.99/yr) + AgentsPoppy checkout wiring.
