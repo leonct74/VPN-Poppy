@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="VPN-Poppy">
+  <rect width="512" height="512" rx="112" fill="#28251f"/>
+  <!-- a privacy shield with a keyhole: your own protected exit, no one else inside -->
+  <path d="M256 96 L400 152 V268 C400 356 332 404 256 432 C180 404 112 356 112 268 V152 Z"
+        fill="none" stroke="#e8b8c9" stroke-width="26" stroke-linejoin="round"/>
+  <circle cx="256" cy="248" r="34" fill="none" stroke="#e8b8c9" stroke-width="26"/>
+  <path d="M256 282 V330" fill="none" stroke="#e8b8c9" stroke-width="26" stroke-linecap="round"/>
+</svg>
