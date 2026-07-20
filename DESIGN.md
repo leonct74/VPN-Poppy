@@ -324,6 +324,25 @@ mechanism; optional to re-confirm.
   for whole-footprint wipes, still used by the host's "tear down everything"). Now: click
   → dialog names the blast radius → confirm, with Cancel default-focused.
 
+### P4 — Shielded DNS: feature built, awaiting live test + purchase gate (2026-07-20)
+
+Premium feature implemented ahead of P2/P3 (founder's call, to lock in monetization).
+The endpoint's unbound resolver becomes an ad/tracker/malware blocker — **pure user-data,
+zero new AWS permissions or cost** (manifest unchanged), exactly as §12 promised.
+
+- First boot (when `shieldedDns`) fetches a curated blocklist (StevenBlack hosts,
+  refreshed each launch) → unbound NXDOMAIN local-zones. Hardened for the 512MB nano:
+  **swap added first** (OOM guard) and **fail-open everywhere** (bad download /
+  `unbound-checkconf` fail / resolver won't start → drop blocklist + restart, so the paid
+  feature never breaks the free VPN). Canary `shielded.vpnpoppy → 10.9.9.9` is a
+  deterministic "is the shield live?" self-test.
+- Launch toggle (labelled "free while testing — will be $14.99/yr"), 🛡️ badge, in-card
+  test hint with the `nslookup` canary + `doubleclick.net` checks. `vpnpoppy:shielded` tag.
+- **Deliberately ungated for now** — the AgentsPoppy purchase gate (`commerce:purchase`,
+  `kind=subscription`, $14.99/yr) is the **next step**.
+- Live test (founder): launch a NEW endpoint with the box checked, connect a device, run
+  the canary + a blocked-domain lookup.
+
 ### P1 — build detail (2026-07-19)
 
 Built and green locally; **not yet live-tested** (that gate needs founder confirmation
