@@ -121,13 +121,22 @@ textarea.input { font-family: var(--poppy-font-mono); font-size: 13px; min-heigh
   background: color-mix(in srgb, var(--poppy-ok) 9%, var(--poppy-surface-2));
   box-shadow: 0 8px 26px -12px color-mix(in srgb, var(--poppy-ok) 60%, transparent);
 }
-/* Not-yet-paid preview: same green teaser, but a dashed border + no committed glow, so a lit
-   shield reads as "here's what you'd get" — never as the actually-on Protected state. */
-.shield-toggle.on.preview {
-  border-style: dashed;
-  box-shadow: none;
-  background: color-mix(in srgb, var(--poppy-ok) 5%, var(--poppy-surface-2));
+/* Selected but NOT paid for → a clear "not active" warning state (red), distinct from the
+   green "Protected". Combined with the disabled Launch button, the only ways out are:
+   subscribe, or turn it off. */
+.shield-toggle.blocking {
+  border-color: color-mix(in srgb, var(--poppy-danger) 55%, transparent);
+  background: color-mix(in srgb, var(--poppy-danger) 8%, var(--poppy-surface-2));
 }
+.shield-toggle.blocking .shield-body { stroke: var(--poppy-danger); fill: none; }
+.shield-toggle.blocking .shield-check { stroke-dashoffset: 42; } /* no check — it's not active */
+.shield-toggle.blocking .shield-pulse { animation: none; opacity: 0; }
+.shield-state.danger {
+  color: var(--poppy-danger);
+  border-color: color-mix(in srgb, var(--poppy-danger) 45%, transparent);
+  background: color-mix(in srgb, var(--poppy-danger) 12%, transparent);
+}
+.shield-block-note { font-size: 13px; color: var(--poppy-danger); }
 
 .shield-visual { flex: 0 0 auto; width: 52px; height: 52px; display: grid; place-items: center; }
 .shield-svg { overflow: visible; }

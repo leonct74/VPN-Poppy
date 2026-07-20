@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { host } from "./host";
 import { SHIELD_PRODUCT_ID } from "./types";
 
@@ -21,43 +20,30 @@ const shieldSvg = (
 );
 
 /**
- * The premium Shielded DNS control with the in-app purchase gate.
- *  - Subscribed → a free, delightful toggle (shield activates on select) + a "Manage billing" link.
- *  - Not subscribed → clicking the shield PREVIEWS the activation animation first (the value made
- *    felt), THEN reveals the standard AgentsPoppy purchase button — so the animation is always seen
- *    before the checkout redirect (founder requirement). Once bought, the shield turns on for real.
- *  - Not purchasable yet (no server product) → still previews, but shows a calm "coming soon" note.
+ * The premium Shielded DNS control + purchase gate. Selecting it is a real toggle, but the
+ * feature can't be *used* until it's paid for — so:
+ *   - Subscribed → selecting turns the shield green ("Protected"); it launches with the box.
+ *   - NOT subscribed → selecting shows a red "Not active until subscribed" state + the buy
+ *     button, and (via the parent) DISABLES Launch until the user either subscribes or turns
+ *     it back off. No ambiguous "preview" — the choice is: pay, or deselect.
+ *   - Not purchasable yet (no server product) → same block, with a "not on sale yet" note.
  */
 export function ShieldedDnsToggle({ checked, onChange, disabled, entitled, purchasable }: Props) {
-  const [preview, setPreview] = useState(false);
   const loading = entitled === null;
-  const locked = entitled === false;
-  const lit = locked ? preview : checked;
-
-  // The instant a purchase lands (entitlement flips to true) after a preview, turn the shield on.
-  useEffect(() => {
-    if (entitled === true && preview) {
-      onChange(true);
-      setPreview(false);
-    }
-  }, [entitled, preview, onChange]);
+  const active = checked && entitled === true; // paid + selected → really on
+  const blocking = checked && entitled !== true && !loading; // selected but not paid → must resolve
 
   function toggle() {
     if (disabled || loading) return;
-    if (locked) {
-      setPreview(true); // preview the shield → reveal the buy button; never jump straight to checkout
-      return;
-    }
     onChange(!checked);
   }
 
-  // Distinguish the not-yet-paid preview from the actually-on "Protected" state, so a lit
-  // shield never reads as "you're getting this" when you haven't subscribed.
-  const stateLabel = locked ? (preview ? "🔒 Preview" : "Premium") : checked ? "Protected" : "Premium";
+  const stateLabel = active ? "Protected" : blocking ? "Not active until subscribed" : "Premium";
+  const cls = `shield-toggle${active ? " on" : ""}${blocking ? " blocking" : ""}${disabled || loading ? " disabled" : ""}`;
 
   return (
     <div>
-      <label className={`shield-toggle${lit ? " on" : ""}${locked && preview ? " preview" : ""}${disabled || loading ? " disabled" : ""}`}>
+      <label className={cls}>
         <input
           className="sr-only"
           type="checkbox"
@@ -71,37 +57,31 @@ export function ShieldedDnsToggle({ checked, onChange, disabled, entitled, purch
         <span className="shield-copy">
           <span className="shield-head">
             <strong>Shielded DNS</strong>
-            <span className="shield-state">{stateLabel}</span>
+            <span className={`shield-state${blocking ? " danger" : ""}`}>{stateLabel}</span>
           </span>
           <span className="shield-sub muted">
             Block ads, trackers &amp; malware on every connected device, in every app — no browser extension, nothing to
             install.{" "}
-            {locked ? (
-              <>
-                <strong>$14.99/yr.</strong> {preview ? "" : "Tap the shield to see it in action."}
-              </>
-            ) : (
-              <>Adds ~30–60s to launch.</>
-            )}
+            {entitled === true ? <>Adds ~30–60s to launch.</> : <strong>$14.99/yr.</strong>}
           </span>
         </span>
       </label>
 
-      {locked && preview && (
+      {blocking && (
         <div className="shield-cta" style={{ flexDirection: "column", alignItems: "flex-start" }}>
-          {purchasable ? (
-            <>
-              <span className="muted" style={{ fontSize: 13 }}>
-                This is a preview. If you launch now you'll get a <strong>standard VPN — without</strong> ad/tracker/malware
-                blocking. Subscribe to switch it on for every launch:
-              </span>
-              {/* Host-drawn button — plays checkout in the system browser, then the shield turns on. */}
+          <span className="shield-block-note">
+            {purchasable
+              ? "Shielded DNS is selected but not active — subscribe to switch it on, or turn it off to launch a standard VPN."
+              : "Shielded DNS isn't on sale for this poppy yet — turn it off to launch a standard VPN."}
+          </span>
+          {purchasable && (
+            <div className="row" style={{ gap: 12 }}>
+              {/* Host-drawn button — checkout in the system browser, then the shield turns on. */}
               <agentspoppy-purchase product={SHIELD_PRODUCT_ID} />
-            </>
-          ) : (
-            <span className="muted" style={{ fontSize: 13 }}>
-              Preview only — Shielded DNS isn't on sale for this poppy yet, so launching gives a standard VPN without it.
-            </span>
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => onChange(false)}>
+                Turn off
+              </button>
+            </div>
           )}
         </div>
       )}

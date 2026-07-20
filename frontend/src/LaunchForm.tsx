@@ -24,8 +24,12 @@ export function LaunchForm({ busy, onLaunch, homeRegion, shieldEntitled, shieldP
   const [shieldedDns, setShieldedDns] = useState(false);
 
   const hourly = (HOURLY_USD[DEFAULT_INSTANCE.instanceType] ?? 0) + IPV4_HOURLY_USD;
+  // Shielded DNS selected but not yet paid for → Launch is blocked until they subscribe or
+  // turn it off. This is the client-side guard that keeps the premium feature paid-for.
+  const shieldBlocking = shieldedDns && shieldEntitled !== true;
 
   function submit() {
+    if (shieldBlocking) return; // guard: never launch a selected-but-unpaid shield
     onLaunch({
       name: name.trim() || undefined,
       region,
@@ -124,15 +128,22 @@ export function LaunchForm({ busy, onLaunch, homeRegion, shieldEntitled, shieldP
         <span className="muted">A live meter shows the real number once it's up.</span>
       </div>
 
-      <button className="btn btn-primary" onClick={submit} disabled={busy}>
-        {busy ? (
-          <>
-            <span className="spinner" /> Launching…
-          </>
-        ) : (
-          "Launch VPN"
+      <div className="row" style={{ gap: 12 }}>
+        <button className="btn btn-primary" onClick={submit} disabled={busy || shieldBlocking}>
+          {busy ? (
+            <>
+              <span className="spinner" /> Launching…
+            </>
+          ) : (
+            "Launch VPN"
+          )}
+        </button>
+        {shieldBlocking && (
+          <span className="muted" style={{ fontSize: 13 }}>
+            Subscribe to Shielded DNS, or turn it off, to launch.
+          </span>
         )}
-      </button>
+      </div>
     </div>
   );
 }
