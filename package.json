@@ -23,7 +23,7 @@
     "esbuild": "^0.24.0",
     "postject": "^1.0.0-alpha.6"
   },
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "optionalDependencies": {
     "@esbuild/darwin-arm64": "^0.24.0",
     "@esbuild/darwin-x64": "^0.24.2",
