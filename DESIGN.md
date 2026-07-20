@@ -310,6 +310,19 @@ mechanism; optional to re-confirm.
   WireGuard server. In-app copy now states this. Building a custom client stays out of
   scope (DESIGN §2 deliberately uses the official clients — that's what enables QR
   import + "unlimited devices").
+- Added a collapsed **"What is WireGuard?"** explainer in the devices callout (plain
+  language, depth one click away).
+
+**Other live-test fixes (`main`):**
+- **Download `.conf` now works.** A sandboxed WKWebView ignores blob/`<a download>`, so
+  the button silently no-op'd. Switched to the broker's `/ext-dl` one-shot-token handoff
+  (backend mints a token + serves bytes with `Content-Disposition`; frontend opens the
+  system browser via `openExternal`). Recorded as CLAUDE.md gotcha #6.
+- **Teardown is a two-step confirm, not type-to-confirm.** The type-to-confirm gate was
+  buggy (one-sided trim/case) *and* the wrong ceremony: a single throwaway endpoint is a
+  *scoped* delete, which AGENTS.md §4 says takes a two-step dialog (type-to-confirm is
+  for whole-footprint wipes, still used by the host's "tear down everything"). Now: click
+  → dialog names the blast radius → confirm, with Cancel default-focused.
 
 ### P1 — build detail (2026-07-19)
 
@@ -327,8 +340,8 @@ before any AWS mutation, per CLAUDE.md working agreements):
   teardown-only lifecycle (`InstanceInitiatedShutdownBehavior=terminate`), readiness via
   `GetConsoleOutput` → `VPNPOPPY_READY`, per-region clients, teardown hook. 11 unit tests
   lock the no-SSH + single-UDP-port invariants. Sidecar builds to a native arm64 SEA.
-- **Frontend**: deploy card (region/slots/lifecycle + cost hint), endpoint card with
-  type-to-confirm teardown, §1b lead-with-strength copy; verified end-to-end vs a mock
+- **Frontend**: deploy card (region/slots/lifecycle + cost hint), endpoint card with a
+  two-step confirm teardown, §1b lead-with-strength copy; verified end-to-end vs a mock
   host bridge. Accent `#e8b8c9`.
 - **Dev-installed** into `~/.agentspoppy/extensions/com.vpnpoppy.desktop` (layout verified).
 
