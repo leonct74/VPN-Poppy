@@ -71,6 +71,14 @@ Full rationale, locked decisions and phases P0–P4: `DESIGN.md` §11–13.
    content with unit tests like vm-poppy's `userdata.test.ts`.
 5. **WireGuard key interop:** X25519 keys must round-trip against the real `wg` tooling
    (base64, clamping) — unit-test against known vectors before any live launch.
+6. **🪤 The sandboxed webview can't save a blob / `<a download>`** (WKWebView ignores it),
+   so file downloads via `URL.createObjectURL` + `a.click()` silently do nothing in the
+   host — they only work in a plain browser (dev/preview), which is how this hides.
+   Use the broker handoff: backend mints a one-shot token (`POST /local-download`) +
+   serves it once with `Content-Disposition` (`GET /local-download/:token`); frontend
+   derives `<origin>/ext-dl/<id>/local-download/<token>` from its own `/ext-ui/<id>/`
+   location and opens it via `host.openExternal` so the SYSTEM browser downloads it
+   (AGENTS.md §7; MailPoppy `localDownload.ts` is the reference).
 
 ## Working agreements (live AWS)
 
