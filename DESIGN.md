@@ -203,7 +203,8 @@ complexity (MVP: running or destroyed; stop/start post-MVP if wanted).
 ceremony + QR/.conf · teardown + user-set auto-teardown hours (no stop state, §11.4) ·
 cost meter · §1b privacy panel · certify green.
 **Post-MVP:** multiple simultaneous endpoints ("fleet") · IPv6 inside the tunnel ·
-Lightsail egress-bundle variant · split-tunnel helper profiles.
+Lightsail egress-bundle variant · split-tunnel helper profiles · **reusable saved
+configs + a stable endpoint address** (see §14 backlog — deferred pending user feedback).
 
 ## 10. Open questions for the founder — ✅ ALL ANSWERED 2026-07-18, see §11
 
@@ -288,6 +289,26 @@ AgentsPoppy first-party checkout (`kind=subscription`), like TrafficPoppy's True
 ## 14. Status
 
 **Design COMPLETE — all §10 questions answered and locked in §11 (2026-07-18).**
+
+### Backlog — reusable saved configs + a stable endpoint address (deferred 2026-07-20)
+
+Founder's call: **ship as-is and gather user feedback first**, revisit this if users ask.
+The ask: let a user save a config and reuse it without re-scanning after each relaunch.
+Constraint: endpoints are ephemeral (fresh IP each launch, no reserved address per §11.4),
+so the config's `Endpoint` line changes → that's why a re-scan is needed. Only a **stable
+address** removes it. Options analysed (with the founder):
+- **Reserved Elastic IP (opt-in):** one stable IP → identical config forever, no re-scan;
+  ~$3.60/mo for the reserved address even when torn down; +~5 EC2 permissions (→ ~18
+  actions, near the DR5 ceiling); revisits §11.4. Fully in the user's AWS, on-brand.
+- **Bring-your-own-domain (Route 53):** stable hostname → identical config; ~$0.50/mo zone
+  + the user owns a domain; +Route 53 permission; poppy writes DNS in the *user's* account
+  → nothing central, on-brand.
+- **Shared `vpn-poppy.com` (platform-hosted):** $0 to users, but the founder runs a small
+  central "update my DNS" service (a user's poppy can't write DNS into the platform's AWS)
+  → a reconnect **dependency**, and the platform touches endpoint-IP+timing **metadata**
+  (public-ish; NOT traffic). Confirmed with founder: the no-vendor-in-the-**traffic**-path
+  promise is unaffected in ALL options — we never run the server or see navigation data.
+  Pair whichever is chosen with **local saved profiles** (persist device keys/names/settings).
 
 ### P0 — walking skeleton: ✅ DONE (founder-verified live, 2026-07-18)
 
