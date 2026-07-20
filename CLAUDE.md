@@ -102,4 +102,4 @@ Design complete + locked (DESIGN §11, 2026-07-18). **Current phase: P0 — walk
 skeleton** (scaffold → manifest vs real assessor → bare-instance launch + sentinel →
 teardown → certify green → dev-install visible in AgentsPoppy).
 Before the repo ever goes public: the pre-public checklist in
-`agentspoppy/docs/ROADMAP.md` (history secret scan, FSL headers, no personal paths).
+`agentspoppy/docs/ROADMAP.md` (history secret scan, license headers, no personal paths).
