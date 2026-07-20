@@ -243,9 +243,11 @@ Lightsail egress-bundle variant · split-tunnel helper profiles.
    kept IP + disk) — rather than ship a button with a cost asterisk, the product offers
    only the honest pair: **running, or gone ($0)**. Relaunch is ~60 s; no Elastic IP
    apparatus needed, and the permission set shrinks to 13 actions.
-5. **Price: $14.99/year per deployment, billed yearly** (≈ $1.25/month) via the
-   AgentsPoppy first-party checkout (`kind=subscription`). Deliberately under commercial
-   VPNs ($5–13/mo) since we don't serve the streaming use-case.
+5. **Price: $14.99/year, billed yearly** (≈ $1.25/month) via the AgentsPoppy first-party
+   checkout (`kind=subscription`). Deliberately under commercial VPNs ($5–13/mo) since we
+   don't serve the streaming use-case. *(Scope refined 2026-07-20: a simple **per-user**
+   unlock, not "per deployment" — endpoints are ephemeral, so a per-endpoint yearly sub
+   is meaningless; see §14.)*
 6. **Privacy framing (§1b): lead with strength.** More *private* than any commercial VPN —
    because there is no VPN company to trust: websites see only the endpoint IP (fresh
    every launch when ephemeral), the local network sees only a tunnel, and no vendor
@@ -339,11 +341,11 @@ a $14.99/yr subscription (DESIGN §11.5, AGENTS.md §11 / `docs/IN_APP_PURCHASES
   once bought, the shield turns on for real. Verified end-to-end vs a stateful mock.
 
 **Decisions / open items for the purchase gate:**
-1. **Entitlement scope = a simple per-user unlock (no `target`).** DESIGN §11.5 says
-   "$14.99/yr **per deployment**", but endpoints are ephemeral (fresh instance id every
-   launch), so per-endpoint makes no sense for a yearly sub; the practical reading is
-   "per user's setup". Implemented as one product unlock (`shielded-dns`, no target) for
-   the buyer. **Founder to confirm**, or switch to per-AWS-account via `target=accountId`.
+1. **Entitlement scope = a simple per-user unlock (no `target`). ✅ Founder-confirmed
+   2026-07-20.** DESIGN §11.5's "$14.99/yr per deployment" is superseded: endpoints are
+   ephemeral (fresh instance id every launch), so per-endpoint makes no sense for a yearly
+   sub. One product unlock (`shielded-dns`, no target) unlocks Shielded DNS for the buyer
+   on any endpoint they launch.
 2. **SERVER-SIDE PREREQUISITE (founder/admin, before a real purchase can be tested):**
    define the first-party product `shielded-dns` in `/admin` → "First-party products"
    (platform account, 0% fee per §5a), **subscription, USD $14.99/yr**, on a Stripe test
