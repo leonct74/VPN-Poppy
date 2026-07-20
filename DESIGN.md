@@ -287,7 +287,12 @@ AgentsPoppy first-party checkout (`kind=subscription`), like TrafficPoppy's True
 
 **Design COMPLETE — all §10 questions answered and locked in §11 (2026-07-18).**
 
-### P0 — walking skeleton: IN PROGRESS (implementation session, 2026-07-18)
+### P0 — walking skeleton: ✅ DONE (founder-verified live, 2026-07-18)
+
+Live launch → readiness → teardown verified clean in the founder's account. (Formal
+`npm run certify` deferred to pre-listing, P3/P4 — not blocking.)
+
+### P1 — the tunnel: built + UI-verified; awaiting live acceptance (2026-07-19)
 
 Built and green locally; **not yet live-tested** (that gate needs founder confirmation
 before any AWS mutation, per CLAUDE.md working agreements):
@@ -323,6 +328,30 @@ before any AWS mutation, per CLAUDE.md working agreements):
 4. **No per-file SPDX headers** — matching vm-poppy's actual convention (LICENSE file +
    `package.json` license field; only the host repo carries per-file headers).
 
-**Remaining P0 (founder-gated):** relaunch AgentsPoppy → confirm amber rating + empty
-state in-app → live launch of a bare t4g.nano → `VPNPOPPY_READY` sentinel → teardown +
-verify account clean → `npm run certify` green. Then P1 (the tunnel).
+**P1 — the tunnel (built, `main`):** X25519 key ceremony in `node:crypto` (no native
+deps), verified against the **RFC 7748** Curve25519 vectors so keys interoperate with
+the official `wg`; WireGuard + unbound first-boot user-data (NAT masquerade with the
+NIC substituted at boot, in-tunnel DNS on `10.8.0.1`); device QR + `.conf` issue with
+per-device rename; key custody in a 0600 keystore (device private keys only in the
+poppy; server private key only in user-data). 27 tests green (12 new, incl. the
+vectors); UI verified end-to-end vs a mock host.
+
+**P1 implementation decisions (recorded per the working agreement):**
+1. **Tunnel plan `10.8.0.0/24`** — server `.1`, devices `.2…` (fits the 1–20 slot
+   range in a /24); device `AllowedIPs = 0.0.0.0/0, ::/0` (full-tunnel).
+2. **unbound as the in-tunnel resolver on `10.8.0.1`** (recursive, access-limited to
+   the tunnel + loopback). This is the resolver Premium (§12) turns into the ad/tracker
+   blocker in P4 — no new AWS surface, no new port.
+3. **NAT via `wg-quick` PostUp/PostDown** with a `%WGNIC%` placeholder that first-boot
+   `sed`-replaces with the box's real default interface (`ens5` on Nitro, not `eth0`) —
+   robust across instance types, and wg-quick tears the rules down with the tunnel.
+4. **QR rendered in the frontend** (bundled `qrcode`, no external host) from the `.conf`
+   the backend returns. The `.conf` (which contains the device private key) does reach
+   the sandboxed webview — necessary to display/scan/download it, and safe: the webview
+   has no network to AWS and can't exfiltrate. The UI labels it "treat like a password".
+
+**Remaining P1 (founder-gated — needs the phone):** relaunch AgentsPoppy → launch an
+endpoint → scan a device QR in the WireGuard app **on a phone on cellular** → confirm
+handshake, browsing works, and the phone's public IP is the endpoint's → tear down
+clean. Coordinated with the founder, never simulated (CLAUDE.md). Then P2 (cost meter +
+lifecycle + §1b panel + latency hints).
