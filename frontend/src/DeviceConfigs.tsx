@@ -25,14 +25,50 @@ function Qr({ text }: { text: string }) {
   return <canvas ref={ref} width={240} height={240} style={{ borderRadius: 8, background: "#fff", padding: 8 }} />;
 }
 
-function download(name: string, conf: string) {
-  const blob = new Blob([conf], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
+/** UTF-8-safe base64 of a (small) string. */
+function toBase64(s: string): string {
+  return btoa(unescape(encodeURIComponent(s)));
+}
+
+/** The loopback URL the SYSTEM BROWSER should fetch for a one-shot token, derived from our
+ *  own /ext-ui/<id>/ origin (the broker exposes /ext-dl/<id>/local-download/<token> there).
+ *  Null when we're not running inside the AgentsPoppy container (dev/standalone). */
+function containerDownloadUrl(token: string): string | null {
+  const here = new URL(window.location.href);
+  const m = here.pathname.match(/^\/ext-ui\/([^/]+)\//);
+  return m ? `${here.protocol}//${here.host}/ext-dl/${m[1]}/local-download/${encodeURIComponent(token)}` : null;
+}
+
+/** Old blob click — works in a plain browser (dev/preview); WKWebView ignores it, which is
+ *  why the container path above exists. */
+function blobFallback(filename: string, conf: string) {
+  const url = URL.createObjectURL(new Blob([conf], { type: "text/plain" }));
   const a = document.createElement("a");
   a.href = url;
-  a.download = `vpnpoppy-${name.replace(/[^A-Za-z0-9._-]/g, "_") || "device"}.conf`;
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Save a device .conf. Inside the AgentsPoppy container the sandboxed webview can't save a
+ * blob (WKWebView ignores `<a download>`), so we mint a one-shot token on the backend and
+ * open the broker's /ext-dl passthrough in the system browser, which downloads it cleanly.
+ * Falls back to a blob click when running standalone (dev/preview).
+ */
+async function download(name: string, conf: string): Promise<void> {
+  const filename = `vpnpoppy-${name.replace(/[^A-Za-z0-9._-]/g, "_") || "device"}.conf`;
+  try {
+    const { token } = await api.localDownloadToken(filename, "text/plain", toBase64(conf));
+    const url = containerDownloadUrl(token);
+    if (url) {
+      await host.openExternal(url);
+      return;
+    }
+  } catch {
+    /* fall through to the blob path (e.g. standalone/dev, or the token mint failed) */
+  }
+  blobFallback(filename, conf);
 }
 
 export function DeviceConfigs({ endpointId, hasIp }: Props) {

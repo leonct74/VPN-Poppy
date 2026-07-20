@@ -22,4 +22,8 @@ export const api = {
 
   renameDevice: (id: string, index: number, name: string) =>
     host.invokeBackend<{ ok: true }>({ method: "POST", path: `/endpoints/${id}/devices/${index}/rename`, body: { name } }),
+
+  /** Hand bytes to the backend for a one-shot download token (WKWebView can't save a blob). */
+  localDownloadToken: (filename: string, contentType: string, dataB64: string) =>
+    host.invokeBackend<{ token: string }>({ method: "POST", path: "/local-download", body: { filename, contentType, dataB64 } }),
 };

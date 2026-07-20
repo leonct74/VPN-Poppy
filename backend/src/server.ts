@@ -3,6 +3,7 @@
 // injected loopback port. See DESIGN.md §2, §13 and AGENTS.md §7.
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { randomBytes } from "node:crypto";
 import { EC2Client } from "@aws-sdk/client-ec2";
 import { readBootstrap, brokerCredentialsProvider } from "./boot";
 import { Ec2Service } from "./ec2";
@@ -51,6 +52,15 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
     return undefined;
   }
 }
+
+// One-shot local-download handoff. A sandboxed WKWebview can't save a blob/`<a download>`
+// (AGENTS.md §7), so the frontend hands us the bytes, we mint a single-use token, and the
+// SYSTEM BROWSER fetches /ext-dl/<id>/local-download/<token> (broker passthrough → this
+// route). Held in memory only, evicted on first fetch or after a short TTL. Mirrors
+// MailPoppy's proven mechanism.
+type PendingDownload = { filename: string; contentType: string; buf: Buffer; timer: ReturnType<typeof setTimeout> };
+const pendingDownloads = new Map<string, PendingDownload>();
+const LOCAL_DOWNLOAD_TTL_MS = 60_000;
 
 /** One calm error line (what happened) for the UI — never a raw stack. */
 function errorMessage(e: unknown): string {
@@ -134,6 +144,40 @@ const server = createServer(async (req, res) => {
           return json(res, 200, { ok: true });
         }
       }
+    }
+
+    // One-shot download: mint a token for bytes the frontend hands us.
+    if (method === "POST" && parts[0] === "local-download" && parts.length === 1) {
+      const body = (await readBody(req)) as { filename?: string; contentType?: string; dataB64?: string } | undefined;
+      if (!body?.dataB64) return json(res, 400, { error: "Nothing to download." });
+      const token = randomBytes(18).toString("hex");
+      const timer = setTimeout(() => pendingDownloads.delete(token), LOCAL_DOWNLOAD_TTL_MS);
+      if (typeof timer.unref === "function") timer.unref(); // don't keep the process alive
+      pendingDownloads.set(token, {
+        filename: body.filename || "vpnpoppy.conf",
+        contentType: body.contentType || "application/octet-stream",
+        buf: Buffer.from(body.dataB64, "base64"),
+        timer,
+      });
+      return json(res, 200, { token });
+    }
+    // One-shot download: the system browser fetches this (via the broker's /ext-dl passthrough).
+    if (method === "GET" && parts[0] === "local-download" && parts.length === 2) {
+      const item = pendingDownloads.get(parts[1]!);
+      if (!item) {
+        res.statusCode = 404;
+        res.end("This download link has expired or was already used.");
+        return;
+      }
+      clearTimeout(item.timer);
+      pendingDownloads.delete(parts[1]!); // single-use
+      const safe = item.filename.replace(/["\\\r\n]/g, "_");
+      res.statusCode = 200;
+      res.setHeader("content-type", item.contentType);
+      res.setHeader("content-disposition", `attachment; filename="${safe}"; filename*=UTF-8''${encodeURIComponent(item.filename)}`);
+      res.setHeader("content-length", String(item.buf.length));
+      res.end(item.buf);
+      return;
     }
 
     // Teardown hook (host POSTs this at the start of teardown; MUST be idempotent).
