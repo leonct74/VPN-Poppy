@@ -75,7 +75,9 @@ export function DeviceConfigs({ endpointId, hasIp }: Props) {
 
   return (
     <div className="card card-2" style={{ marginTop: 10 }}>
-      <div className="section-title">Your devices — {data.devices.length} slots</div>
+      <div className="section-title">
+        Your devices — {data.devices.length} slot{data.devices.length === 1 ? "" : "s"}
+      </div>
 
       {/* Upfront: you need the WireGuard app BEFORE the QR is any use (a QR holds a config,
           not a link — the phone camera can't use it). Shown before the device rows so nobody
@@ -93,6 +95,24 @@ export function DeviceConfigs({ endpointId, hasIp }: Props) {
           WireGuard is free and open-source — <strong>not a VPN company</strong>. It just runs the tunnel on your device
           and connects only to your endpoint, so no one sits in the middle.
         </div>
+        <details style={{ marginTop: 6 }}>
+          <summary style={{ cursor: "pointer", fontSize: 12, color: "var(--poppy-accent)" }}>
+            What is WireGuard, and is it safe?
+          </summary>
+          <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+            <p style={{ margin: "0 0 6px" }}>
+              WireGuard is the technology that builds the encrypted tunnel between your device and your endpoint. It's a
+              modern, widely-audited open standard — it's part of the Linux kernel and used across the industry — and
+              the app is just its official, free client.
+            </p>
+            <p style={{ margin: 0 }}>
+              It has no account, no ads, and no tracking, and it connects <strong>only</strong> to the endpoint you set
+              up here. Nothing passes through any WireGuard company — there isn't one in your traffic path. That's
+              exactly why VPN-Poppy uses it: trustworthy apps on every platform, with the "no vendor sees your traffic"
+              promise kept intact.
+            </p>
+          </div>
+        </details>
         <div style={{ marginTop: 8 }}>
           <button className="btn btn-sm" onClick={() => host.openExternal(WIREGUARD_INSTALL_URL)}>
             Get the WireGuard app
