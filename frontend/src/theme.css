@@ -102,3 +102,63 @@ textarea.input { font-family: var(--poppy-font-mono); font-size: 13px; min-heigh
 .tabs { display: inline-flex; gap: 2px; background: var(--poppy-surface-2); border-radius: 8px; padding: 3px; }
 .tab { border: none; background: transparent; color: var(--poppy-muted-2); padding: 5px 12px; border-radius: 6px; cursor: pointer; font: inherit; }
 .tab.active { background: var(--poppy-surface-0); color: var(--poppy-text); }
+
+/* Premium Shielded DNS toggle — the shield "activates" (fills + checks + pulses) on select.
+   Green (--poppy-ok) reads as "protected", matching the running-endpoint 🛡️ badge. */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.shield-toggle {
+  display: flex; gap: 14px; align-items: center; cursor: pointer;
+  padding: 12px 14px; border: 1px solid var(--poppy-border-strong); border-radius: 12px;
+  background: var(--poppy-surface-2);
+  transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+.shield-toggle:hover { border-color: var(--poppy-muted-2); }
+.shield-toggle.disabled { opacity: 0.6; cursor: not-allowed; }
+.shield-toggle:focus-within { outline: 2px solid var(--poppy-accent); outline-offset: 2px; }
+.shield-toggle.on {
+  border-color: color-mix(in srgb, var(--poppy-ok) 55%, transparent);
+  background: color-mix(in srgb, var(--poppy-ok) 9%, var(--poppy-surface-2));
+  box-shadow: 0 8px 26px -12px color-mix(in srgb, var(--poppy-ok) 60%, transparent);
+}
+
+.shield-visual { flex: 0 0 auto; width: 52px; height: 52px; display: grid; place-items: center; }
+.shield-svg { overflow: visible; }
+.shield-svg .shield-body {
+  fill: none; stroke: var(--poppy-muted); stroke-width: 3; stroke-linejoin: round;
+  transition: stroke 0.35s ease, fill 0.35s ease;
+}
+.shield-svg .shield-check {
+  fill: none; stroke: var(--poppy-muted); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 42; stroke-dashoffset: 42;
+  transition: stroke-dashoffset 0.5s ease 0.15s, stroke 0.35s ease;
+}
+.shield-svg .shield-pulse { fill: var(--poppy-ok); opacity: 0; transform-box: fill-box; transform-origin: center; }
+.shield-toggle.on .shield-body { stroke: var(--poppy-ok); fill: color-mix(in srgb, var(--poppy-ok) 20%, transparent); }
+.shield-toggle.on .shield-check { stroke: var(--poppy-ok); stroke-dashoffset: 0; }
+.shield-toggle.on .shield-svg { animation: shieldPop 0.55s ease; }
+.shield-toggle.on .shield-pulse { animation: shieldPulse 2.6s ease-out 0.35s infinite; }
+
+@keyframes shieldPop { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.13); } }
+@keyframes shieldPulse {
+  0% { opacity: 0.4; transform: scale(0.65); }
+  65% { opacity: 0; transform: scale(1.5); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+.shield-copy { display: flex; flex-direction: column; gap: 3px; }
+.shield-head { display: flex; align-items: center; gap: 8px; }
+.shield-state {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; padding: 1px 8px; border-radius: 999px;
+  border: 1px solid var(--poppy-border-strong); color: var(--poppy-muted-2); background: var(--poppy-surface-0);
+  transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+}
+.shield-toggle.on .shield-state {
+  color: var(--poppy-ok); border-color: color-mix(in srgb, var(--poppy-ok) 45%, transparent);
+  background: color-mix(in srgb, var(--poppy-ok) 12%, transparent);
+}
+.shield-sub { font-size: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .shield-toggle, .shield-toggle * { animation: none !important; transition: none !important; }
+}

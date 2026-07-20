@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ShieldedDnsToggle } from "./ShieldedDnsToggle";
 import { DEFAULT_INSTANCE, HOURLY_USD, IPV4_HOURLY_USD, REGIONS, formatUsd, type EndpointConfig } from "./types";
 
 interface Props {
@@ -102,28 +103,10 @@ export function LaunchForm({ busy, onLaunch, homeRegion }: Props) {
         </div>
       </label>
 
-      <label className="field">
-        <span>Premium</span>
-        <div className="row" style={{ gap: 8, alignItems: "flex-start" }}>
-          <input
-            type="checkbox"
-            checked={shieldedDns}
-            onChange={(e) => setShieldedDns(e.target.checked)}
-            disabled={busy}
-            style={{ marginTop: 3 }}
-          />
-          <div>
-            <div>
-              🛡️ <strong>Shielded DNS</strong> — block ads, trackers &amp; malware on every connected device, in every
-              app.
-            </div>
-            <div className="muted" style={{ fontSize: 12 }}>
-              Turns this endpoint's DNS into an ad, tracker &amp; malware blocker — no browser extension, nothing to
-              install on your devices. <strong>Free while testing</strong> (will be $14.99/yr). Adds ~30–60s to launch.
-            </div>
-          </div>
-        </div>
-      </label>
+      <div style={{ marginBottom: 12 }}>
+        <div className="section-title" style={{ marginBottom: 6 }}>Premium</div>
+        <ShieldedDnsToggle checked={shieldedDns} onChange={setShieldedDns} disabled={busy} />
+      </div>
 
       <div className="banner info" style={{ margin: "8px 0 14px" }}>
         <strong>≈ {formatUsd(hourly)}/hr</strong> while running ({DEFAULT_INSTANCE.instanceType} + public IP, approx) — plus
