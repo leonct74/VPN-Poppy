@@ -7,6 +7,7 @@ export interface EndpointConfig {
   arch: "arm64" | "x86_64";
   deviceSlots: number;
   autoTeardownHours?: number;
+  shieldedDns?: boolean;
 }
 
 export interface EndpointSummary {
@@ -18,7 +19,12 @@ export interface EndpointSummary {
   publicIp?: string;
   launchedAt?: string;
   autoTeardownHours?: number;
+  shielded?: boolean;
 }
+
+/** Shielded DNS self-test canary (mirror of backend/src/types.ts). */
+export const SHIELD_CANARY = "shielded.vpnpoppy";
+export const SHIELD_CANARY_IP = "10.9.9.9";
 
 export interface EndpointStatus {
   state: string;

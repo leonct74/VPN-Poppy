@@ -13,6 +13,7 @@ export const TAG_CONNECTION = "agentspoppy:connection";
 export const TAG_NAME = "vpnpoppy:name";
 export const TAG_REGION = "vpnpoppy:region";
 export const TAG_LIFECYCLE = "vpnpoppy:lifecycle";
+export const TAG_SHIELDED = "vpnpoppy:shielded";
 
 export interface AttributionContext {
   accountId: string;

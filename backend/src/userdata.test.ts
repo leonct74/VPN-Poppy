@@ -61,6 +61,21 @@ describe("generateUserData — WireGuard first boot", () => {
     const ttl = generateUserData({ config: { ...base, autoTeardownHours: 8 }, ceremony });
     expect(ttl).toContain('shutdown -h +480 "VPN-Poppy auto-teardown"');
   });
+
+  it("adds Shielded DNS blocking only when shieldedDns is set, and fails open", () => {
+    expect(ud).not.toContain("vpnpoppy-shield.conf"); // off by default
+    const shielded = generateUserData({ config: { ...base, shieldedDns: true }, ceremony });
+    // fetches a blocklist and loads it as NXDOMAIN local-zones
+    expect(shielded).toContain("StevenBlack/hosts");
+    expect(shielded).toContain('always_nxdomain');
+    // fail-open: bad config or a resolver that won't start drops the blocklist and restarts
+    expect(shielded).toContain("unbound-checkconf");
+    expect(shielded).toContain('if ! systemctl is-active --quiet unbound; then rm -f "$SHIELD"');
+    // swap guards the 512MB nano against OOM
+    expect(shielded).toContain("mkswap /swapfile");
+    // the self-test canary
+    expect(shielded).toContain('local-data: "shielded.vpnpoppy A 10.9.9.9"');
+  });
 });
 
 describe("tags", () => {

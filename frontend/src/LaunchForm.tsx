@@ -16,6 +16,7 @@ export function LaunchForm({ busy, onLaunch, homeRegion }: Props) {
   const [deviceSlots, setDeviceSlots] = useState(10);
   const [autoTeardown, setAutoTeardown] = useState(true);
   const [hours, setHours] = useState(8);
+  const [shieldedDns, setShieldedDns] = useState(false);
 
   const hourly = (HOURLY_USD[DEFAULT_INSTANCE.instanceType] ?? 0) + IPV4_HOURLY_USD;
 
@@ -27,6 +28,7 @@ export function LaunchForm({ busy, onLaunch, homeRegion }: Props) {
       arch: DEFAULT_INSTANCE.arch,
       deviceSlots,
       autoTeardownHours: autoTeardown ? Math.max(1, Math.round(hours)) : undefined,
+      shieldedDns,
     });
   }
 
@@ -97,6 +99,29 @@ export function LaunchForm({ busy, onLaunch, homeRegion }: Props) {
             <input type="radio" checked={!autoTeardown} onChange={() => setAutoTeardown(false)} disabled={busy} />
             <span>Keep running until I tear it down</span>
           </label>
+        </div>
+      </label>
+
+      <label className="field">
+        <span>Premium</span>
+        <div className="row" style={{ gap: 8, alignItems: "flex-start" }}>
+          <input
+            type="checkbox"
+            checked={shieldedDns}
+            onChange={(e) => setShieldedDns(e.target.checked)}
+            disabled={busy}
+            style={{ marginTop: 3 }}
+          />
+          <div>
+            <div>
+              🛡️ <strong>Shielded DNS</strong> — block ads, trackers &amp; malware on every connected device, in every
+              app.
+            </div>
+            <div className="muted" style={{ fontSize: 12 }}>
+              Turns this endpoint's DNS into an ad/tracker blocker — no browser extension, nothing to install on your
+              devices. <strong>Free while testing</strong> (will be $14.99/yr). Adds ~30–60s to launch.
+            </div>
+          </div>
         </div>
       </label>
 

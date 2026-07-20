@@ -30,6 +30,7 @@ import {
   TAG_NAME,
   TAG_REGION,
   TAG_LIFECYCLE,
+  TAG_SHIELDED,
 } from "./tags";
 import { generateUserData } from "./userdata";
 import { runCeremony } from "./wireguard";
@@ -74,6 +75,7 @@ export class Ec2Service {
       { Key: TAG_NAME, Value: name },
       { Key: TAG_REGION, Value: config.region },
       { Key: TAG_LIFECYCLE, Value: lifecycle },
+      { Key: TAG_SHIELDED, Value: config.shieldedDns ? "on" : "off" },
     ];
 
     const res = await this.ec2.send(
@@ -299,6 +301,7 @@ export class Ec2Service {
       instanceType: inst.InstanceType ?? "",
       publicIp: inst.PublicIpAddress,
       launchedAt: inst.LaunchTime ? new Date(inst.LaunchTime).toISOString() : undefined,
+      shielded: tagValue(inst.Tags, TAG_SHIELDED) === "on",
     };
   }
 }

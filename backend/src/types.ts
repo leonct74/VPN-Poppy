@@ -25,6 +25,12 @@ export interface EndpointConfig {
    * tears down. There is deliberately no "stop" state (DESIGN §11.4): running or gone.
    */
   autoTeardownHours?: number;
+  /**
+   * Premium "Shielded DNS" (DESIGN §12): turn the endpoint's resolver into an
+   * ad/tracker/malware blocker. Pure user-data addition, zero extra AWS cost/permissions.
+   * (Purchase-gated later; a free toggle for now so it can be tested.)
+   */
+  shieldedDns?: boolean;
 }
 
 /** A live endpoint's state as reconstructed from EC2 (never from local storage). */
@@ -37,6 +43,8 @@ export interface EndpointSummary {
   publicIp?: string;
   launchedAt?: string;
   autoTeardownHours?: number;
+  /** True when this endpoint was launched with premium Shielded DNS (ad/tracker blocking). */
+  shielded?: boolean;
 }
 
 /** Readiness for one endpoint, derived from the serial console (never local state). */
@@ -55,3 +63,14 @@ export const READY_SENTINEL = "VPNPOPPY_READY";
 
 /** The single UDP port WireGuard listens on. The ONLY ingress VPN-Poppy ever opens. */
 export const WIREGUARD_PORT = 51820;
+
+/**
+ * Shielded DNS self-test canary. When Shielded DNS is active the resolver answers this
+ * name with SHIELD_CANARY_IP; on a non-shielded endpoint it's NXDOMAIN. A deterministic
+ * "is the shield on?" check the tunnel owner can run (DESIGN §12).
+ */
+export const SHIELD_CANARY = "shielded.vpnpoppy";
+export const SHIELD_CANARY_IP = "10.9.9.9";
+
+/** The curated blocklist fetched at boot (ads + trackers + malware; refreshed each launch). */
+export const SHIELD_BLOCKLIST_URL = "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts";

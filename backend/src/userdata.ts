@@ -13,7 +13,13 @@
 //      §3.4; the definitive check is still the device's handshake).
 
 import { runCeremony, buildServerConfig, SERVER_ADDRESS, VPN_SUBNET, type Ceremony } from "./wireguard";
-import { READY_SENTINEL, type EndpointConfig } from "./types";
+import {
+  READY_SENTINEL,
+  SHIELD_BLOCKLIST_URL,
+  SHIELD_CANARY,
+  SHIELD_CANARY_IP,
+  type EndpointConfig,
+} from "./types";
 
 export interface UserDataInput {
   config: EndpointConfig;
@@ -71,6 +77,9 @@ export function generateUserData({ config, ceremony }: UserDataInput): string {
     "systemctl enable unbound",
   ];
 
+  // Premium Shielded DNS (DESIGN §12): make the resolver an ad/tracker/malware blocker.
+  if (config.shieldedDns) lines.push(...shieldedDnsLines());
+
   // Optional TTL self-destruct — the forgotten-instance safety net (DESIGN §11.4). Combined
   // with InstanceInitiatedShutdownBehavior=terminate this tears the box down on its own.
   if (config.autoTeardownHours && config.autoTeardownHours > 0) {
@@ -81,4 +90,35 @@ export function generateUserData({ config, ceremony }: UserDataInput): string {
   // Sentinel to the serial console (what GetConsoleOutput reads) AND the boot log.
   lines.push("", `echo "${READY_SENTINEL}" | tee /dev/console || echo "${READY_SENTINEL}"`);
   return lines.join("\n") + "\n";
+}
+
+/**
+ * The first-boot steps that turn unbound into an ad/tracker/malware blocker (premium
+ * Shielded DNS, DESIGN §12): fetch a curated blocklist and load every domain as an
+ * NXDOMAIN local-zone, refreshed on each boot. Two safety properties:
+ *   - **fail-open**: if the download or config is bad, or unbound won't come up (e.g. OOM),
+ *     we drop the blocklist and restart so DNS keeps working — a paid feature must never
+ *     break the free VPN;
+ *   - a **swap file** first, so a ~150k-entry list can't OOM a 512MB t4g.nano.
+ * A canary local-data record lets the tunnel owner prove the shield is live (see types.ts).
+ */
+export function shieldedDnsLines(): string[] {
+  return [
+    "",
+    "# --- Shielded DNS (premium): ad/tracker/malware blocking at the resolver (DESIGN §12) ---",
+    "# Swap first so a large blocklist can't OOM a 512MB nano; every step fails open.",
+    "if [ ! -f /swapfile ]; then fallocate -l 512M /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile; fi",
+    "SHIELD=/etc/unbound/unbound.conf.d/vpnpoppy-shield.conf",
+    `if curl -fsSL --max-time 90 ${SHIELD_BLOCKLIST_URL} -o /tmp/vpnpoppy-blocklist 2>/dev/null; then`,
+    '  echo "server:" > "$SHIELD"',
+    // "0.0.0.0 domain" hosts lines → NXDOMAIN local-zones (drop the 0.0.0.0 self-entry).
+    `  grep -E '^0\\.0\\.0\\.0[[:space:]]+' /tmp/vpnpoppy-blocklist | awk '{print $2}' | grep -vx 0.0.0.0 | sort -u | sed -e 's/^/  local-zone: "/' -e 's/$/" always_nxdomain/' >> "$SHIELD"`,
+    // Canary: answers only when the shield is loaded — a deterministic self-test.
+    `  echo '  local-zone: "${SHIELD_CANARY}" redirect' >> "$SHIELD"`,
+    `  echo '  local-data: "${SHIELD_CANARY} A ${SHIELD_CANARY_IP}"' >> "$SHIELD"`,
+    '  if unbound-checkconf >/dev/null 2>&1; then systemctl restart unbound; else rm -f "$SHIELD"; systemctl restart unbound; fi',
+    "  sleep 2",
+    '  if ! systemctl is-active --quiet unbound; then rm -f "$SHIELD"; systemctl restart unbound; fi',
+    "fi",
+  ];
 }

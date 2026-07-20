@@ -3,7 +3,10 @@ import { api } from "./api";
 import { CopyButton } from "./CopyButton";
 import { DeviceConfigs } from "./DeviceConfigs";
 import { host } from "./host";
-import { regionLabel, type EndpointStatus, type EndpointSummary } from "./types";
+import { regionLabel, SHIELD_CANARY, SHIELD_CANARY_IP, type EndpointStatus, type EndpointSummary } from "./types";
+
+/** The in-tunnel resolver address devices query (the WireGuard gateway). */
+const SERVER_ADDR = "10.8.0.1";
 
 interface Props {
   endpoint: EndpointSummary;
@@ -83,6 +86,9 @@ export function EndpointCard({ endpoint, onChanged }: Props) {
           {endpoint.autoTeardownHours ? (
             <span className="badge warn"><span className="dot" />auto-teardown {endpoint.autoTeardownHours}h</span>
           ) : null}
+          {endpoint.shielded ? (
+            <span className="badge ok"><span className="dot" />🛡️ Shielded DNS</span>
+          ) : null}
         </div>
         <span className="mono muted" style={{ fontSize: 12 }}>{regionLabel(endpoint.region)}</span>
       </div>
@@ -109,6 +115,16 @@ export function EndpointCard({ endpoint, onChanged }: Props) {
           port scans.
         </div>
       </div>
+
+      {endpoint.shielded && (
+        <div className="banner" style={{ borderColor: "var(--poppy-ok)", marginBottom: 10, fontSize: 12 }}>
+          🛡️ <strong>Shielded DNS is on.</strong> Ads, trackers &amp; malware domains are blocked for every connected
+          device. To prove it, connect a device and run{" "}
+          <span className="chip">nslookup {SHIELD_CANARY} {SERVER_ADDR}</span> — it answers{" "}
+          <span className="chip">{SHIELD_CANARY_IP}</span> only when the shield is live. A blocked domain like{" "}
+          <span className="chip">nslookup doubleclick.net {SERVER_ADDR}</span> returns nothing (NXDOMAIN).
+        </div>
+      )}
 
       {(endpoint.state === "running" || endpoint.state === "pending") && (
         <DeviceConfigs endpointId={endpoint.instanceId} hasIp={!!ip} />
