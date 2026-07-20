@@ -25,7 +25,6 @@ export function EndpointCard({ endpoint, onChanged }: Props) {
   const [status, setStatus] = useState<EndpointStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const [typed, setTyped] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
   // Poll this endpoint's readiness from the cloud until it's ready (never from memory).
@@ -59,7 +58,6 @@ export function EndpointCard({ endpoint, onChanged }: Props) {
 
   const ready = status?.ready ?? false;
   const ip = endpoint.publicIp;
-  const armed = typed.trim() === endpoint.name;
 
   async function tearDown() {
     setBusy(true);
@@ -119,7 +117,7 @@ export function EndpointCard({ endpoint, onChanged }: Props) {
       {err && <div className="banner err" style={{ marginBottom: 10 }}>{err}</div>}
 
       <div className="row">
-        <button className="btn btn-sm btn-danger" disabled={busy} onClick={() => { setConfirming(true); setTyped(""); }}>
+        <button className="btn btn-sm btn-danger" disabled={busy} onClick={() => setConfirming(true)}>
           {busy ? <><span className="spinner" /> Tearing down…</> : "Tear down"}
         </button>
         {ip && (
@@ -143,23 +141,14 @@ export function EndpointCard({ endpoint, onChanged }: Props) {
             <p className="muted-2">
               This permanently <strong>terminates</strong> endpoint{" "}
               <span className="chip">{endpoint.instanceId}</span> and deletes its firewall. It{" "}
-              <strong>stops billing immediately</strong> and <strong>cannot be undone</strong> — but relaunching a fresh
-              endpoint takes about a minute.
+              <strong>stops billing immediately</strong> and <strong>cannot be undone</strong> — your devices will
+              disconnect. Relaunching a fresh endpoint takes about a minute.
             </p>
-            <label className="field">
-              <span>Type the endpoint name — <span className="chip">{endpoint.name}</span> — to confirm</span>
-              <input
-                className="input"
-                value={typed}
-                onChange={(e) => setTyped(e.target.value)}
-                placeholder={endpoint.name}
-                autoFocus
-              />
-            </label>
             {err && <div className="banner err" style={{ marginBottom: 10 }}>{err}</div>}
             <div className="row" style={{ justifyContent: "flex-end", marginTop: 8 }}>
-              <button className="btn" onClick={() => setConfirming(false)} disabled={busy}>Cancel</button>
-              <button className="btn btn-danger" disabled={!armed || busy} onClick={tearDown}>
+              {/* Cancel is the default focus, so a stray Enter/double-click can't destroy. */}
+              <button className="btn" onClick={() => setConfirming(false)} disabled={busy} autoFocus>Cancel</button>
+              <button className="btn btn-danger" disabled={busy} onClick={tearDown}>
                 {busy ? <><span className="spinner" /> Tearing down…</> : "Tear down"}
               </button>
             </div>
