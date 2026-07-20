@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { api } from "./api";
 import { CopyButton } from "./CopyButton";
+import { host } from "./host";
 import type { DeviceConfig, DevicesResponse } from "./types";
+
+const WIREGUARD_INSTALL_URL = "https://www.wireguard.com/install/";
 
 interface Props {
   endpointId: string;
@@ -73,6 +76,21 @@ export function DeviceConfigs({ endpointId, hasIp }: Props) {
   return (
     <div className="card card-2" style={{ marginTop: 10 }}>
       <div className="section-title">Your devices — {data.devices.length} slots</div>
+
+      {/* Upfront: you need the WireGuard app BEFORE the QR is any use (a QR holds a config,
+          not a link — the phone camera can't use it). Shown before the device rows so nobody
+          reaches for their camera first. */}
+      <div className="banner" style={{ borderColor: "var(--poppy-accent)", marginBottom: 12 }}>
+        <strong>Each device needs the free WireGuard app first.</strong> Then scan these codes{" "}
+        <strong>from inside WireGuard</strong> — not your phone's camera (a WireGuard QR is a config, not a web link,
+        so the camera just offers to search for it).
+        <div style={{ marginTop: 8 }}>
+          <button className="btn btn-sm" onClick={() => host.openExternal(WIREGUARD_INSTALL_URL)}>
+            Get the WireGuard app
+          </button>
+        </div>
+      </div>
+
       {!hasIp && (
         <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
           Waiting for the endpoint's address — configs complete once it's up.
@@ -123,8 +141,13 @@ export function DeviceConfigs({ endpointId, hasIp }: Props) {
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ textAlign: "center" }}>
             <h3 style={{ marginTop: 0 }}>{qr.name}</h3>
             <p className="muted-2" style={{ fontSize: 13 }}>
-              In the <strong>WireGuard app</strong> on this device, add a tunnel → <strong>Scan from QR code</strong>.
+              Open the free <strong>WireGuard app</strong> on your device → tap <strong>＋</strong> →{" "}
+              <strong>Create/Scan from QR code</strong> → point it here.
             </p>
+            <div className="banner" style={{ fontSize: 12, margin: "0 0 10px", textAlign: "left" }}>
+              Use the WireGuard app to scan — <strong>not your phone's camera</strong>. A WireGuard QR holds a config,
+              not a web link, so the camera app will just offer to search for it.
+            </div>
             <div style={{ display: "flex", justifyContent: "center", margin: "10px 0" }}>
               <Qr text={qr.conf} />
             </div>
