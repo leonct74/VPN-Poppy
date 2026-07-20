@@ -1,5 +1,5 @@
 import { host } from "./host";
-import { SHIELD_PRODUCT_ID } from "./types";
+import { SHIELD_PRODUCT_ID, formatPrice, type PurchasePrice } from "./types";
 
 interface Props {
   checked: boolean;
@@ -9,6 +9,8 @@ interface Props {
   entitled: boolean | null;
   /** True when a priced product exists server-side (so a buy button can be shown). */
   purchasable: boolean;
+  /** The server-set price (null while loading / not for sale) — the source for the shown price. */
+  price: PurchasePrice | null;
 }
 
 const shieldSvg = (
@@ -28,7 +30,7 @@ const shieldSvg = (
  *     it back off. No ambiguous "preview" — the choice is: pay, or deselect.
  *   - Not purchasable yet (no server product) → same block, with a "not on sale yet" note.
  */
-export function ShieldedDnsToggle({ checked, onChange, disabled, entitled, purchasable }: Props) {
+export function ShieldedDnsToggle({ checked, onChange, disabled, entitled, purchasable, price }: Props) {
   const loading = entitled === null;
   const active = checked && entitled === true; // paid + selected → really on
   const blocking = checked && entitled !== true && !loading; // selected but not paid → must resolve
@@ -62,7 +64,7 @@ export function ShieldedDnsToggle({ checked, onChange, disabled, entitled, purch
           <span className="shield-sub muted">
             Block ads, trackers &amp; malware on every connected device, in every app — no browser extension, nothing to
             install.{" "}
-            {entitled === true ? <>Adds ~30–60s to launch.</> : <strong>$14.99/yr.</strong>}
+            {entitled === true ? <>Adds ~30–60s to launch.</> : price ? <strong>{formatPrice(price)}.</strong> : null}
           </span>
         </span>
       </label>

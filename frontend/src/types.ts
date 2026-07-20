@@ -43,6 +43,16 @@ export interface PurchaseInfo {
   owned: boolean;
 }
 
+/** Currency symbols we localise; anything else falls back to the ISO code (e.g. "CHF "). */
+const CURRENCY_SYMBOLS: Record<string, string> = { usd: "$", eur: "€", gbp: "£", cad: "$", aud: "$" };
+
+/** Format a server-set price for display — the ONE place price/currency is rendered, so the
+ *  panel and the purchase button never drift from what the product is actually priced at. */
+export function formatPrice(p: PurchasePrice): string {
+  const amount = `${CURRENCY_SYMBOLS[p.currency] ?? p.currency.toUpperCase() + " "}${(p.amountMinor / 100).toFixed(2)}`;
+  return p.kind === "subscription" ? `${amount}/${p.interval === "month" ? "mo" : "yr"}` : amount;
+}
+
 export interface EndpointStatus {
   state: string;
   ready: boolean;

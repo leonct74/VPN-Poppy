@@ -11,6 +11,7 @@ import {
   isRunning,
   type EndpointSummary,
   type Meta,
+  type PurchasePrice,
 } from "./types";
 
 // Served from frontend dir → dist root; same file the manifest declares as the app icon.
@@ -28,6 +29,9 @@ export function App() {
   // Shielded DNS purchase gate — null = still loading (AGENTS.md §11, verified server-side).
   const [shieldEntitled, setShieldEntitled] = useState<boolean | null>(null);
   const [shieldPurchasable, setShieldPurchasable] = useState(false);
+  // The server-set price (currency + amount + interval) — the ONLY source for what we display,
+  // so changing the price/currency in /admin flows straight through with no hard-coded copy.
+  const [shieldPrice, setShieldPrice] = useState<PurchasePrice | null>(null);
   const pollRef = useRef<number | null>(null);
 
   /** Read Shielded DNS entitlement + whether it's for sale (never trusted locally — the host
@@ -37,10 +41,12 @@ export function App() {
       const info = await host.purchaseInfo(SHIELD_PRODUCT_ID);
       setShieldEntitled(info.owned);
       setShieldPurchasable(!!info.price);
+      setShieldPrice(info.price);
     } catch {
       // Commerce unavailable / not supported → treat as not-owned, not-for-sale (calm state).
       setShieldEntitled(false);
       setShieldPurchasable(false);
+      setShieldPrice(null);
     }
   }, []);
 
@@ -189,6 +195,7 @@ export function App() {
         homeRegion={meta?.account.region}
         shieldEntitled={shieldEntitled}
         shieldPurchasable={shieldPurchasable}
+        shieldPrice={shieldPrice}
       />
 
       <div className="spread" style={{ margin: "18px 2px 8px" }}>

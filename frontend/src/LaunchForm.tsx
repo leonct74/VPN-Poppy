@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ShieldedDnsToggle } from "./ShieldedDnsToggle";
-import { DEFAULT_INSTANCE, HOURLY_USD, IPV4_HOURLY_USD, REGIONS, formatUsd, type EndpointConfig } from "./types";
+import { DEFAULT_INSTANCE, HOURLY_USD, IPV4_HOURLY_USD, REGIONS, formatUsd, type EndpointConfig, type PurchasePrice } from "./types";
 
 interface Props {
   busy: boolean;
@@ -11,10 +11,12 @@ interface Props {
   shieldEntitled: boolean | null;
   /** True when a priced Shielded DNS product exists server-side. */
   shieldPurchasable: boolean;
+  /** The server-set price for Shielded DNS (null while loading / not for sale). */
+  shieldPrice: PurchasePrice | null;
 }
 
 /** The deploy card (DESIGN §7): pick a region, choose device slots + lifecycle, one button. */
-export function LaunchForm({ busy, onLaunch, homeRegion, shieldEntitled, shieldPurchasable }: Props) {
+export function LaunchForm({ busy, onLaunch, homeRegion, shieldEntitled, shieldPurchasable, shieldPrice }: Props) {
   const defaultRegion = REGIONS.some((r) => r.id === homeRegion) ? homeRegion! : "eu-central-1";
   const [name, setName] = useState("");
   const [region, setRegion] = useState(defaultRegion);
@@ -119,6 +121,7 @@ export function LaunchForm({ busy, onLaunch, homeRegion, shieldEntitled, shieldP
           disabled={busy}
           entitled={shieldEntitled}
           purchasable={shieldPurchasable}
+          price={shieldPrice}
         />
       </div>
 

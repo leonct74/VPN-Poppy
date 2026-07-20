@@ -7,14 +7,9 @@
 // the poppy; entitlement is server-verified (AGENTS.md §11). Call definePurchaseButton() once.
 
 import { host } from "./host";
+import { formatPrice } from "./types";
 
 const TAG = "agentspoppy-purchase";
-const SYMBOLS: Record<string, string> = { usd: "$", eur: "€", gbp: "£", cad: "$", aud: "$" };
-
-function formatPrice(p: { amountMinor: number; currency: string; kind: string; interval?: string }): string {
-  const amount = `${SYMBOLS[p.currency] ?? p.currency.toUpperCase() + " "}${(p.amountMinor / 100).toFixed(2)}`;
-  return p.kind === "subscription" ? `${amount}/${p.interval === "month" ? "mo" : "yr"}` : amount;
-}
 
 // Fixed look (clay is the host's reserved purchase colour — deliberate, so the button reads as
 // a platform control, not poppy chrome).
