@@ -292,7 +292,26 @@ AgentsPoppy first-party checkout (`kind=subscription`), like TrafficPoppy's True
 Live launch → readiness → teardown verified clean in the founder's account. (Formal
 `npm run certify` deferred to pre-listing, P3/P4 — not blocking.)
 
-### P1 — the tunnel: built + UI-verified; awaiting live acceptance (2026-07-19)
+### P1 — the tunnel: ✅ live-verified on mobile (2026-07-20)
+
+Founder scanned a device QR in the official WireGuard app on a phone → tunnel came up
+and worked. Live acceptance met. Laptop path (Download .conf → Import) uses the same
+mechanism; optional to re-confirm.
+
+**Onboarding lessons from the live test (fixed in-app, `main`):**
+- A WireGuard QR holds a *config, not a URL*, so a phone **camera** app just offers a
+  web search. The devices section now says, prominently and before any QR, to scan
+  **from inside the WireGuard app** (with a "Get the WireGuard app" link), and splits
+  📱 Phone-scans-QR vs 💻 Laptop-uses-.conf.
+- **The official WireGuard app is not a "vendor" and does not break the no-vendor
+  claim** (founder raised this; answered, no design change to §2/§11). It's free +
+  open-source, has no account/telemetry, and is a *client* that runs the tunnel on the
+  device and connects only to the user's own endpoint — nothing routes through any
+  WireGuard server. In-app copy now states this. Building a custom client stays out of
+  scope (DESIGN §2 deliberately uses the official clients — that's what enables QR
+  import + "unlimited devices").
+
+### P1 — build detail (2026-07-19)
 
 Built and green locally; **not yet live-tested** (that gate needs founder confirmation
 before any AWS mutation, per CLAUDE.md working agreements):
