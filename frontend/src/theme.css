@@ -121,6 +121,13 @@ textarea.input { font-family: var(--poppy-font-mono); font-size: 13px; min-heigh
   background: color-mix(in srgb, var(--poppy-ok) 9%, var(--poppy-surface-2));
   box-shadow: 0 8px 26px -12px color-mix(in srgb, var(--poppy-ok) 60%, transparent);
 }
+/* Not-yet-paid preview: same green teaser, but a dashed border + no committed glow, so a lit
+   shield reads as "here's what you'd get" — never as the actually-on Protected state. */
+.shield-toggle.on.preview {
+  border-style: dashed;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--poppy-ok) 5%, var(--poppy-surface-2));
+}
 
 .shield-visual { flex: 0 0 auto; width: 52px; height: 52px; display: grid; place-items: center; }
 .shield-svg { overflow: visible; }

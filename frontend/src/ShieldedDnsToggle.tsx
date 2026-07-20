@@ -51,11 +51,13 @@ export function ShieldedDnsToggle({ checked, onChange, disabled, entitled, purch
     onChange(!checked);
   }
 
-  const stateLabel = locked ? (preview ? "Preview" : "Premium") : checked ? "Protected" : "Premium";
+  // Distinguish the not-yet-paid preview from the actually-on "Protected" state, so a lit
+  // shield never reads as "you're getting this" when you haven't subscribed.
+  const stateLabel = locked ? (preview ? "🔒 Preview" : "Premium") : checked ? "Protected" : "Premium";
 
   return (
     <div>
-      <label className={`shield-toggle${lit ? " on" : ""}${disabled || loading ? " disabled" : ""}`}>
+      <label className={`shield-toggle${lit ? " on" : ""}${locked && preview ? " preview" : ""}${disabled || loading ? " disabled" : ""}`}>
         <input
           className="sr-only"
           type="checkbox"
@@ -86,16 +88,19 @@ export function ShieldedDnsToggle({ checked, onChange, disabled, entitled, purch
       </label>
 
       {locked && preview && (
-        <div className="shield-cta">
+        <div className="shield-cta" style={{ flexDirection: "column", alignItems: "flex-start" }}>
           {purchasable ? (
             <>
-              <span className="muted" style={{ fontSize: 13 }}>Looks good? Keep it on for every launch:</span>
+              <span className="muted" style={{ fontSize: 13 }}>
+                This is a preview. If you launch now you'll get a <strong>standard VPN — without</strong> ad/tracker/malware
+                blocking. Subscribe to switch it on for every launch:
+              </span>
               {/* Host-drawn button — plays checkout in the system browser, then the shield turns on. */}
               <agentspoppy-purchase product={SHIELD_PRODUCT_ID} />
             </>
           ) : (
             <span className="muted" style={{ fontSize: 13 }}>
-              Subscriptions aren't switched on for this poppy yet — check back soon.
+              Preview only — Shielded DNS isn't on sale for this poppy yet, so launching gives a standard VPN without it.
             </span>
           )}
         </div>
