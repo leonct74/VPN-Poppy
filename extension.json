@@ -63,6 +63,7 @@
     "connection:read",
     "backend:invoke",
     "host:openExternal",
-    "host:notify"
+    "host:notify",
+    "commerce:purchase"
   ]
 }

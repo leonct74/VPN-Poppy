@@ -7,10 +7,14 @@ interface Props {
   onLaunch: (config: EndpointConfig) => void;
   /** The connection's home region — used as the default pick. */
   homeRegion?: string;
+  /** Shielded DNS entitlement: null = loading, true = subscribed, false = not. */
+  shieldEntitled: boolean | null;
+  /** True when a priced Shielded DNS product exists server-side. */
+  shieldPurchasable: boolean;
 }
 
 /** The deploy card (DESIGN §7): pick a region, choose device slots + lifecycle, one button. */
-export function LaunchForm({ busy, onLaunch, homeRegion }: Props) {
+export function LaunchForm({ busy, onLaunch, homeRegion, shieldEntitled, shieldPurchasable }: Props) {
   const defaultRegion = REGIONS.some((r) => r.id === homeRegion) ? homeRegion! : "eu-central-1";
   const [name, setName] = useState("");
   const [region, setRegion] = useState(defaultRegion);
@@ -105,7 +109,13 @@ export function LaunchForm({ busy, onLaunch, homeRegion }: Props) {
 
       <div style={{ marginBottom: 12 }}>
         <div className="section-title" style={{ marginBottom: 6 }}>Premium</div>
-        <ShieldedDnsToggle checked={shieldedDns} onChange={setShieldedDns} disabled={busy} />
+        <ShieldedDnsToggle
+          checked={shieldedDns}
+          onChange={setShieldedDns}
+          disabled={busy}
+          entitled={shieldEntitled}
+          purchasable={shieldPurchasable}
+        />
       </div>
 
       <div className="banner info" style={{ margin: "8px 0 14px" }}>

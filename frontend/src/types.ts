@@ -26,6 +26,23 @@ export interface EndpointSummary {
 export const SHIELD_CANARY = "shielded.vpnpoppy";
 export const SHIELD_CANARY_IP = "10.9.9.9";
 
+/** The commerce product id for the Shielded DNS subscription (defined server-side). */
+export const SHIELD_PRODUCT_ID = "shielded-dns";
+
+/** A priced product's info, as the host reports it from the commerce plane (AGENTS.md §11). */
+export interface PurchasePrice {
+  amountMinor: number;
+  currency: string;
+  kind: "one_time" | "subscription";
+  interval?: "month" | "year";
+}
+export interface PurchaseInfo {
+  productId: string;
+  name: string;
+  price: PurchasePrice | null;
+  owned: boolean;
+}
+
 export interface EndpointStatus {
   state: string;
   ready: boolean;

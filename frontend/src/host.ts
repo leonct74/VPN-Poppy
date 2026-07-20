@@ -47,6 +47,14 @@ function call<T>(method: string, params: unknown[], timeoutMs = 120_000): Promis
   });
 }
 
+export interface PurchaseInfoWire {
+  productId: string;
+  name: string;
+  price: { amountMinor: number; currency: string; kind: "one_time" | "subscription"; interval?: "month" | "year" } | null;
+  owned: boolean;
+}
+type PurchaseOpts = { target?: string };
+
 export const host = {
   ensureAccess: (): Promise<AccessState> => call("ensureAccess", []),
   getConnection: (): Promise<{ id: string; status: string; app?: { id: string; name: string } }> =>
@@ -54,4 +62,15 @@ export const host = {
   invokeBackend: <T = unknown>(request: BackendInvoke): Promise<T> => call("invokeBackend", [request]),
   openExternal: (url: string): Promise<void> => call("openExternal", [url]),
   notify: (n: { title: string; body?: string }): Promise<void> => call("notify", [n]),
+
+  // In-app purchases (commerce:purchase). Payment runs in the system browser; the poppy only
+  // ever learns owned/not-owned — entitlement is verified server-side (AGENTS.md §11).
+  purchaseInfo: (product: string, opts?: PurchaseOpts): Promise<PurchaseInfoWire> =>
+    call("purchaseInfo", opts ? [product, opts] : [product]),
+  buyProduct: (product: string, opts?: PurchaseOpts): Promise<{ owned: boolean }> =>
+    call("buyProduct", opts ? [product, opts] : [product]),
+  isPurchased: (product: string, opts?: PurchaseOpts): Promise<boolean> =>
+    call("isPurchased", opts ? [product, opts] : [product]),
+  manageSubscription: (product: string, opts?: PurchaseOpts): Promise<void> =>
+    call("manageSubscription", opts ? [product, opts] : [product]),
 };

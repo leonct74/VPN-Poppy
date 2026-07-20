@@ -3,7 +3,15 @@ import { api } from "./api";
 import { host, type AccessState } from "./host";
 import { LaunchForm } from "./LaunchForm";
 import { EndpointCard } from "./EndpointCard";
-import { HOURLY_USD, IPV4_HOURLY_USD, formatUsd, isRunning, type EndpointSummary, type Meta } from "./types";
+import {
+  HOURLY_USD,
+  IPV4_HOURLY_USD,
+  SHIELD_PRODUCT_ID,
+  formatUsd,
+  isRunning,
+  type EndpointSummary,
+  type Meta,
+} from "./types";
 
 // Served from frontend dir → dist root; same file the manifest declares as the app icon.
 const icon = "./vpnpoppy-icon.png";
@@ -17,7 +25,24 @@ export function App() {
   const [endpoints, setEndpoints] = useState<EndpointSummary[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [launching, setLaunching] = useState(false);
+  // Shielded DNS purchase gate — null = still loading (AGENTS.md §11, verified server-side).
+  const [shieldEntitled, setShieldEntitled] = useState<boolean | null>(null);
+  const [shieldPurchasable, setShieldPurchasable] = useState(false);
   const pollRef = useRef<number | null>(null);
+
+  /** Read Shielded DNS entitlement + whether it's for sale (never trusted locally — the host
+   *  verifies with the commerce plane). Called on mount and whenever a purchase completes. */
+  const refreshEntitlement = useCallback(async () => {
+    try {
+      const info = await host.purchaseInfo(SHIELD_PRODUCT_ID);
+      setShieldEntitled(info.owned);
+      setShieldPurchasable(!!info.price);
+    } catch {
+      // Commerce unavailable / not supported → treat as not-owned, not-for-sale (calm state).
+      setShieldEntitled(false);
+      setShieldPurchasable(false);
+    }
+  }, []);
 
   /** Reconstruct live state from AWS (never from local memory) — framework §5. */
   const refresh = useCallback(async () => {
@@ -47,7 +72,8 @@ export function App() {
     }
   }, [refresh]);
 
-  // Mount: read meta (no AWS), then request access.
+  // Mount: read meta (no AWS), then request access. Entitlement is independent of AWS, so
+  // fetch it in parallel; re-check whenever the standard purchase button reports a buy.
   useEffect(() => {
     (async () => {
       try {
@@ -57,7 +83,11 @@ export function App() {
       }
       await connect();
     })();
-  }, [connect]);
+    void refreshEntitlement();
+    const onPurchased = () => void refreshEntitlement();
+    document.addEventListener("purchased", onPurchased);
+    return () => document.removeEventListener("purchased", onPurchased);
+  }, [connect, refreshEntitlement]);
 
   // Poll while granted — so a booting endpoint's state + IP fill in on their own, and a
   // teardown started elsewhere is reflected here (background-resume, framework §5).
@@ -153,7 +183,13 @@ export function App() {
         </div>
       )}
 
-      <LaunchForm busy={launching} onLaunch={launch} homeRegion={meta?.account.region} />
+      <LaunchForm
+        busy={launching}
+        onLaunch={launch}
+        homeRegion={meta?.account.region}
+        shieldEntitled={shieldEntitled}
+        shieldPurchasable={shieldPurchasable}
+      />
 
       <div className="spread" style={{ margin: "18px 2px 8px" }}>
         <h2 className="section-title" style={{ margin: 0 }}>Your endpoints</h2>

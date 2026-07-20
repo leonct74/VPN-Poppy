@@ -158,6 +158,7 @@ textarea.input { font-family: var(--poppy-font-mono); font-size: 13px; min-heigh
   background: color-mix(in srgb, var(--poppy-ok) 12%, transparent);
 }
 .shield-sub { font-size: 12px; }
+.shield-cta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; padding-left: 4px; }
 
 @media (prefers-reduced-motion: reduce) {
   .shield-toggle, .shield-toggle * { animation: none !important; transition: none !important; }
