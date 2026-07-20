@@ -118,8 +118,8 @@ export function LaunchForm({ busy, onLaunch, homeRegion }: Props) {
               app.
             </div>
             <div className="muted" style={{ fontSize: 12 }}>
-              Turns this endpoint's DNS into an ad/tracker blocker — no browser extension, nothing to install on your
-              devices. <strong>Free while testing</strong> (will be $14.99/yr). Adds ~30–60s to launch.
+              Turns this endpoint's DNS into an ad, tracker &amp; malware blocker — no browser extension, nothing to
+              install on your devices. <strong>Free while testing</strong> (will be $14.99/yr). Adds ~30–60s to launch.
             </div>
           </div>
         </div>
