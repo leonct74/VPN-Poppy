@@ -324,9 +324,35 @@ mechanism; optional to re-confirm.
   for whole-footprint wipes, still used by the host's "tear down everything"). Now: click
   → dialog names the blast radius → confirm, with Cancel default-focused.
 
-### P4 — Shielded DNS: feature built, awaiting live test + purchase gate (2026-07-20)
+### P4 — Shielded DNS purchase gate: built poppy-side, awaiting server product (2026-07-20)
 
-Premium feature implemented ahead of P2/P3 (founder's call, to lock in monetization).
+The AgentsPoppy in-app purchase is wired (`commerce:purchase`), turning Shielded DNS into
+a $14.99/yr subscription (DESIGN §11.5, AGENTS.md §11 / `docs/IN_APP_PURCHASES.md`).
+
+- **Products are NOT in the manifest** — only the `commerce:purchase` capability is;
+  products + prices are defined server-side (confirmed vs the `examples/paydemo-poppy`
+  reference). The manifest gains no AWS permission (still amber/zero-red).
+- Standard **host-drawn `<agentspoppy-purchase>`** button (copy of the SDK element),
+  server-verified entitlement, mandatory "Manage billing" control, `purchased` event.
+- **Conversion flow** (founder's requirement met): not-subscribed → clicking the shield
+  plays the activation animation FIRST, THEN reveals the Subscribe button → checkout;
+  once bought, the shield turns on for real. Verified end-to-end vs a stateful mock.
+
+**Decisions / open items for the purchase gate:**
+1. **Entitlement scope = a simple per-user unlock (no `target`).** DESIGN §11.5 says
+   "$14.99/yr **per deployment**", but endpoints are ephemeral (fresh instance id every
+   launch), so per-endpoint makes no sense for a yearly sub; the practical reading is
+   "per user's setup". Implemented as one product unlock (`shielded-dns`, no target) for
+   the buyer. **Founder to confirm**, or switch to per-AWS-account via `target=accountId`.
+2. **SERVER-SIDE PREREQUISITE (founder/admin, before a real purchase can be tested):**
+   define the first-party product `shielded-dns` in `/admin` → "First-party products"
+   (platform account, 0% fee per §5a), **subscription, USD $14.99/yr**, on a Stripe test
+   key. Until it exists, `purchaseInfo` returns no price → the poppy shows a calm "coming
+   soon" note (graceful). The poppy code needs no change once the product is created.
+3. Needs a **full app restart** (manifest capability change; may prompt a re-approval).
+
+### P4 — Shielded DNS feature: built + live-verified (2026-07-20)
+
 The endpoint's unbound resolver becomes an ad/tracker/malware blocker — **pure user-data,
 zero new AWS permissions or cost** (manifest unchanged), exactly as §12 promised.
 
