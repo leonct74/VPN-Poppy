@@ -341,7 +341,21 @@ zero new AWS permissions or cost** (manifest unchanged), exactly as §12 promise
 - **Deliberately ungated for now** — the AgentsPoppy purchase gate (`commerce:purchase`,
   `kind=subscription`, $14.99/yr) is the **next step**.
 - Live test (founder): launch a NEW endpoint with the box checked, connect a device, run
-  the canary + a blocked-domain lookup.
+  the canary + a blocked-domain lookup. **✅ Live-verified 2026-07-20** (founder: canary +
+  block both worked; also noticeably faster browsing — see value point below).
+- The premium toggle got an animated "activate the shield" treatment (`ShieldedDnsToggle`),
+  founder-approved.
+
+**Notes for the purchase-gate implementation (founder, 2026-07-20):**
+- **Play the shield-activation animation BEFORE redirecting to checkout.** The delight is
+  the pitch — let the user *see* the shield light up (and ideally the value points) on the
+  way into the buy flow, not after. Unchecked premium → animate → then the checkout.
+- **"Browse faster, use less data" is a real, sellable value point — surface it in the
+  upsell.** DNS-level ad/tracker blocking removes a large share of requests/bytes/JS on
+  ad-heavy pages (blocked domains return NXDOMAIN locally, instantly), so pages load faster
+  and the tunnel carries less data (cheaper egress, lighter on mobile). Honest caveats:
+  little effect on ad-light pages; not element-hiding (first-party/allowed-domain ads can
+  still appear); the VPN adds one small hop. Net effect on typical sites is faster.
 
 ### P1 — build detail (2026-07-19)
 
