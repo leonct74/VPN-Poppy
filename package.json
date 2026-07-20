@@ -16,8 +16,8 @@
     "build:sidecar": "node scripts/build-sidecar.mjs",
     "validate-manifest": "node scripts/validate-manifest.mjs",
     "assess-permissions": "node scripts/assess-permissions.mjs",
-    "install-dev": "node /Users/mt/Projects/agentspoppy/scripts/install-dev-extension.mjs --src . --frontend frontend/dist --backend backend/vpnpoppy-sidecar",
-    "certify": "npm --prefix /Users/mt/Projects/agentspoppy run certify -- --extension /Users/mt/Projects/vpn-poppy --yes"
+    "install-dev": "node \"${AGENTSPOPPY_DIR:-../agentspoppy}/scripts/install-dev-extension.mjs\" --src . --frontend frontend/dist --backend backend/vpnpoppy-sidecar",
+    "certify": "npm --prefix \"${AGENTSPOPPY_DIR:-../agentspoppy}\" run certify -- --extension \"$INIT_CWD\" --yes"
   },
   "devDependencies": {
     "esbuild": "^0.24.0",
