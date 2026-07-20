@@ -81,9 +81,18 @@ export function DeviceConfigs({ endpointId, hasIp }: Props) {
           not a link — the phone camera can't use it). Shown before the device rows so nobody
           reaches for their camera first. */}
       <div className="banner" style={{ borderColor: "var(--poppy-accent)", marginBottom: 12 }}>
-        <strong>Each device needs the free WireGuard app first.</strong> Then scan these codes{" "}
-        <strong>from inside WireGuard</strong> — not your phone's camera (a WireGuard QR is a config, not a web link,
-        so the camera just offers to search for it).
+        <strong>Each device needs the free WireGuard app first.</strong>
+        <div style={{ marginTop: 4 }}>
+          📱 <strong>Phone:</strong> scan the QR <strong>from inside WireGuard</strong> — not your camera (the QR is a
+          config, not a web link).
+        </div>
+        <div style={{ marginTop: 2 }}>
+          💻 <strong>Laptop:</strong> use <strong>Download .conf</strong>, then Import it into WireGuard.
+        </div>
+        <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+          WireGuard is free and open-source — <strong>not a VPN company</strong>. It just runs the tunnel on your device
+          and connects only to your endpoint, so no one sits in the middle.
+        </div>
         <div style={{ marginTop: 8 }}>
           <button className="btn btn-sm" onClick={() => host.openExternal(WIREGUARD_INSTALL_URL)}>
             Get the WireGuard app
