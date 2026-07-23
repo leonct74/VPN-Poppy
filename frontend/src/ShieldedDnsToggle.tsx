@@ -63,7 +63,7 @@ export function ShieldedDnsToggle({ checked, onChange, disabled, entitled, purch
           </span>
           <span className="shield-sub muted">
             Block ads, trackers &amp; malware on every connected device, in every app — no browser extension, nothing to
-            install.{" "}
+            install. Pages load faster and lighter, too: blocked ads and trackers are never downloaded.{" "}
             {entitled === true ? <>Adds ~30–60s to launch.</> : price ? <strong>{formatPrice(price)}.</strong> : null}
           </span>
         </span>
