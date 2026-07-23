@@ -50,7 +50,7 @@ function call<T>(method: string, params: unknown[], timeoutMs = 120_000): Promis
 export interface PurchaseInfoWire {
   productId: string;
   name: string;
-  price: { amountMinor: number; currency: string; kind: "one_time" | "subscription"; interval?: "month" | "year" } | null;
+  price: { amountMinor: number; currency: string; kind: "one_time" | "subscription"; interval?: "month" | "year"; trialDays?: number } | null;
   owned: boolean;
 }
 type PurchaseOpts = { target?: string };

@@ -59,8 +59,13 @@ export function definePurchaseButton(): void {
         return;
       }
       if (!info.price) return this.paint(""); // not for sale (no server product) — nothing to show
-      const label =
-        this.getAttribute("label") ?? `${info.price.kind === "subscription" ? "Subscribe" : "Buy"} · ${formatPrice(info.price)}`;
+      // A free trial leads: "Start 14-day free trial" converts better than a price. Falls back to
+      // the plain price CTA when there's no trial. An explicit `label` attribute always wins.
+      const defaultLabel =
+        info.price.kind === "subscription" && info.price.trialDays
+          ? `Start ${info.price.trialDays}-day free trial`
+          : `${info.price.kind === "subscription" ? "Subscribe" : "Buy"} · ${formatPrice(info.price)}`;
+      const label = this.getAttribute("label") ?? defaultLabel;
       this.paint(`<button type="button">${MARK}<span>${escapeHtml(label)}</span></button>`);
       this.root.querySelector("button")?.addEventListener("click", () => void this.buy());
     }

@@ -35,6 +35,8 @@ export interface PurchasePrice {
   currency: string;
   kind: "one_time" | "subscription";
   interval?: "month" | "year";
+  /** Free-trial length in days (subscriptions only), set in /admin. Absent = no trial. */
+  trialDays?: number;
 }
 export interface PurchaseInfo {
   productId: string;
@@ -47,10 +49,22 @@ export interface PurchaseInfo {
 const CURRENCY_SYMBOLS: Record<string, string> = { usd: "$", eur: "€", gbp: "£", cad: "$", aud: "$" };
 
 /** Format a server-set price for display — the ONE place price/currency is rendered, so the
- *  panel and the purchase button never drift from what the product is actually priced at. */
+ *  panel and the purchase button never drift from what the product is actually priced at.
+ *  Subscriptions show a MONTHLY figure: for a yearly plan that's the annual price ÷ 12, which
+ *  reads as a smaller, friendlier number (and matches Stripe's own checkout display). Everything
+ *  is computed from the live amount — nothing here is hard-coded, so an /admin price change flows
+ *  straight through. */
 export function formatPrice(p: PurchasePrice): string {
-  const amount = `${CURRENCY_SYMBOLS[p.currency] ?? p.currency.toUpperCase() + " "}${(p.amountMinor / 100).toFixed(2)}`;
-  return p.kind === "subscription" ? `${amount}/${p.interval === "month" ? "mo" : "yr"}` : amount;
+  const sym = CURRENCY_SYMBOLS[p.currency] ?? p.currency.toUpperCase() + " ";
+  if (p.kind !== "subscription") return `${sym}${(p.amountMinor / 100).toFixed(2)}`;
+  const perMonthMinor = p.interval === "year" ? p.amountMinor / 12 : p.amountMinor;
+  return `${sym}${(perMonthMinor / 100).toFixed(2)}/mo`;
+}
+
+/** The billing-cadence note shown next to a monthly-displayed price — "billed annually" for a
+ *  yearly plan (so the ÷12 figure isn't mistaken for the actual charge), empty otherwise. */
+export function billingNote(p: PurchasePrice): string {
+  return p.kind === "subscription" && p.interval === "year" ? "billed annually" : "";
 }
 
 export interface EndpointStatus {

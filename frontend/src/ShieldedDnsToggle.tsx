@@ -1,5 +1,5 @@
 import { host } from "./host";
-import { SHIELD_PRODUCT_ID, formatPrice, type PurchasePrice } from "./types";
+import { SHIELD_PRODUCT_ID, formatPrice, billingNote, type PurchasePrice } from "./types";
 
 interface Props {
   checked: boolean;
@@ -64,7 +64,21 @@ export function ShieldedDnsToggle({ checked, onChange, disabled, entitled, purch
           <span className="shield-sub muted">
             Block ads, trackers &amp; malware on every connected device, in every app — no browser extension, nothing to
             install. Pages load faster and lighter, too: blocked ads and trackers are never downloaded.{" "}
-            {entitled === true ? <>Adds ~30–60s to launch.</> : price ? <strong>{formatPrice(price)}.</strong> : null}
+            {entitled === true ? (
+              <>Adds ~30–60s to launch.</>
+            ) : price ? (
+              price.trialDays ? (
+                <>
+                  <strong>{price.trialDays} days free</strong>, then {formatPrice(price)}
+                  {billingNote(price) ? ` · ${billingNote(price)}` : ""}.
+                </>
+              ) : (
+                <>
+                  <strong>{formatPrice(price)}</strong>
+                  {billingNote(price) ? ` · ${billingNote(price)}` : ""}.
+                </>
+              )
+            ) : null}
           </span>
         </span>
       </label>
@@ -73,7 +87,9 @@ export function ShieldedDnsToggle({ checked, onChange, disabled, entitled, purch
         <div className="shield-cta" style={{ flexDirection: "column", alignItems: "flex-start" }}>
           <span className="shield-block-note">
             {purchasable
-              ? "Shielded DNS is selected but not active — subscribe to switch it on, or turn it off to launch a standard VPN."
+              ? `Shielded DNS is selected but not active — ${
+                  price?.trialDays ? "start your free trial" : "subscribe"
+                } to switch it on, or turn it off to launch a standard VPN.`
               : "Shielded DNS isn't on sale for this poppy yet — turn it off to launch a standard VPN."}
           </span>
           {purchasable && (
