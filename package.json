@@ -11,13 +11,14 @@
   "scripts": {
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "build": "npm run build:frontend && npm run build:sidecar",
+    "build": "npm run build:frontend && npm run build:backend",
     "build:frontend": "npm run build -w @vpnpoppy/frontend",
     "build:sidecar": "node scripts/build-sidecar.mjs",
     "validate-manifest": "node scripts/validate-manifest.mjs",
     "assess-permissions": "node scripts/assess-permissions.mjs",
-    "install-dev": "node \"${AGENTSPOPPY_DIR:-../agentspoppy}/scripts/install-dev-extension.mjs\" --src . --frontend frontend/dist --backend backend/vpnpoppy-sidecar",
-    "certify": "npm --prefix \"${AGENTSPOPPY_DIR:-../agentspoppy}\" run certify -- --extension \"$INIT_CWD\" --yes"
+    "install-dev": "node \"${AGENTSPOPPY_DIR:-../agentspoppy}/scripts/install-dev-extension.mjs\" --src . --frontend frontend/dist --backend backend/index.cjs",
+    "certify": "npm --prefix \"${AGENTSPOPPY_DIR:-../agentspoppy}\" run certify -- --extension \"$INIT_CWD\" --yes",
+    "build:backend": "node scripts/build-backend-bundle.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.24.0",

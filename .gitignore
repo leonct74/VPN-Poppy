@@ -14,3 +14,4 @@ backend/vpnpoppy-sidecar*
 .vpnpoppy/
 leaves-no-trace.cert.json
 release/
+backend/index.cjs
