@@ -1,6 +1,6 @@
 {
   "name": "@vpnpoppy/backend",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "type": "module",
   "description": "VPN-Poppy backend sidecar — EC2 endpoint provisioning via AgentsPoppy-brokered credentials.",
