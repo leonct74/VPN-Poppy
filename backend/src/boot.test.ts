@@ -43,6 +43,26 @@ describe("brokerCredentialsProvider", () => {
     expect(bodies).toEqual([undefined, { approvalId: "A" }, undefined, { approvalId: "B" }]);
   });
 
+  it("single-flights concurrent callers into one mint", async () => {
+    // Two AWS calls at poppy-open must share ONE credential request — two parallel
+    // mints on a supervised connection parked two approvals (two authorization
+    // prompts for a single open).
+    let posts = 0;
+    const provider = brokerCredentialsProvider(boot, {
+      fetchImpl: async () => {
+        posts++;
+        await new Promise((r) => setTimeout(r, 10)); // let the second caller pile in
+        return json(200, CREDS);
+      },
+      sleep: async () => {},
+    });
+
+    const [a, b] = await Promise.all([provider(), provider()]);
+    expect(a.accessKeyId).toBe("AKIA");
+    expect(b.accessKeyId).toBe("AKIA");
+    expect(posts).toBe(1);
+  });
+
   it("still fails fast on a non-retryable refusal", async () => {
     const provider = brokerCredentialsProvider(boot, {
       fetchImpl: async () => json(500, { message: "this operation was denied by the user" }),

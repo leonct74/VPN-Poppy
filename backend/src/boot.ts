@@ -137,11 +137,19 @@ export function brokerCredentialsProvider(
     }
   }
 
+  // Single-flight: concurrent callers share ONE in-flight mint. Without this, two AWS
+  // calls at poppy-open each started their own mint — on a supervised connection that
+  // parked two approvals, so the user was asked to authorize twice for one open.
+  let inFlight: Promise<AwsCredentialIdentity> | null = null;
+
   return async () => {
     if (cached?.expiration && cached.expiration.getTime() - Date.now() > REFRESH_BUFFER_MS) {
       return cached;
     }
-    cached = await mint();
+    inFlight ??= mint().finally(() => {
+      inFlight = null; // a failed mint must not wedge future attempts
+    });
+    cached = await inFlight;
     return cached;
   };
 }
