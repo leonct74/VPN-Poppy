@@ -110,7 +110,10 @@ export function brokerCredentialsProvider(
           /* keep the status-based message */
         }
         // A pending approval has a short TTL; if it lapsed mid-wait, transparently re-request.
-        if (/expired|already been used|request again/i.test(message)) {
+        // "not found" is the same story from the other side — the broker no longer knows the
+        // approval we're echoing (e.g. it was lost to a broker restart) — so re-request rather
+        // than surfacing a red "approval not found" error the user can only fix by retrying.
+        if (/expired|already been used|request again|not found/i.test(message)) {
           await sleep(APPROVAL_POLL_MS);
           res = await post();
           continue;
