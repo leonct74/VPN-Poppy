@@ -24,8 +24,7 @@ Full rationale, locked decisions and phases P0–P4: `DESIGN.md` §11–13.
    manifest, design kit, plain language, "Show the money"). Hard requirements.
 3. Reference implementations to REUSE, not reinvent:
    - `~/Projects/vm-poppy` — **the primary template.** Repo layout (`frontend/ backend/
-     scripts/`), manifest shape, SEA sidecar build (`scripts/build-sidecar.mjs` incl.
-     `--win32`), `tags.ts` attribution/ownership, `amis.ts` per-region AMI resolve, the
+     scripts/`), manifest shape, `tags.ts` attribution/ownership, `amis.ts` per-region AMI resolve, the
      serial-console sentinel, launch/teardown/certify flow, `CopyButton`, DR1–DR6 lessons.
    - `~/Projects/agentspoppy/scripts/pack-extension.mjs` — packaging (darwin + win32);
      catalogue = `agentspoppy-web/src/data/catalog-seed.json` (founder pushes that).
@@ -58,11 +57,13 @@ Full rationale, locked decisions and phases P0–P4: `DESIGN.md` §11–13.
 
 ## Gotchas inherited from the poppy family (each cost real debugging time)
 
-1. **🪤 Stale SEA sidecar masks backend changes.** After ANY backend change: rebuild the
-   sidecar and fully restart the app, or you test old code. (Bit MailPoppy repeatedly.)
+1. **🪤 Stale backend bundle masks backend changes.** After ANY backend change:
+   `npm run build:backend` and fully restart the app, or you test old code. (Bit MailPoppy
+   repeatedly.)
 2. **Never `git add -A` after building binaries** — an 86 MB sidecar once landed in
-   VM-Poppy's git history. `.gitignore` every artifact FIRST (`vpnpoppy-sidecar*`,
-   `*.exe`, `release/`, `dist/`, generated bundles).
+   VM-Poppy's git history. `.gitignore` every artifact FIRST (`release/`, `dist/`,
+   generated bundles). Less of a hazard since the SEA build went away (the backend is now
+   a few MB of JS), but the rule stands.
 3. **Deterministic identity rule:** key generation uses the crypto RNG once at deploy and
    is persisted; nothing derives from `new Date()`; re-runs must never duplicate or
    silently regenerate identities (MailPoppy importer lesson, adapted).
@@ -93,8 +94,13 @@ Full rationale, locked decisions and phases P0–P4: `DESIGN.md` §11–13.
 
 ## Commands (fill in as scaffolded — mirror vm-poppy's package.json)
 
-- `npm install` · `npm run typecheck` · `npm run test` · `npm run build:sidecar`
-  (+ `--win32`) · `npm run validate-manifest` · `npm run install-dev` · `npm run certify`
+- `npm install` · `npm run typecheck` · `npm run test` · `npm run build` (= `build:frontend`
+  + `build:backend`) · `npm run validate-manifest` · `npm run install-dev` · `npm run certify`
+
+⚠️ **Never a SEA build.** VPN-Poppy declares `"runtime": "node22"` and ships only its own JS
+(`backend/index.cjs`); AgentsPoppy provides Node (agentspoppy `docs/RUNTIMES.md` R1). The old
+`scripts/build-sidecar.mjs` was **deleted 2026-07-25** — it produced a 110 MB package, which
+pack-extension, submission review and the broker now all reject.
 
 ## Status
 

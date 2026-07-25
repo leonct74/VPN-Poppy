@@ -190,7 +190,7 @@ complexity (MVP: running or destroyed; stop/start post-MVP if wanted).
 
 ## 8. Reuse map (read-only references)
 
-- `~/Projects/vm-poppy` — repo layout, `build-sidecar.mjs` (+ `--win32`), `tags.ts`
+- `~/Projects/vm-poppy` — repo layout, `tags.ts`
   ownership/attribution, `amis.ts` per-region AMI resolve, serial-console sentinel,
   teardown/certify flow, `CopyButton`, launch-form patterns, DR1–DR6 lessons.
 - `~/Projects/agentspoppy/AGENTS.md` — the contract (rating, teardown, tags, §9 costs).
@@ -412,7 +412,8 @@ Built and green locally; **not yet live-tested** (that gate needs founder confir
 before any AWS mutation, per CLAUDE.md working agreements):
 
 - **Scaffold** on the vm-poppy layout (`frontend/ backend/ scripts/`), workspaces,
-  `build-sidecar.mjs` (+ `--win32`), `.claude/launch.json`.
+  `build-backend-bundle.mjs` (node22 CJS bundle — NOT a SEA build; see agentspoppy
+  `docs/RUNTIMES.md` R1), `.claude/launch.json`.
 - **Manifest** = the locked §5 permission set, **13 actions**, verified **amber /
   zero-red** against the REAL `assessPermissionSet`. Committed gates
   `scripts/{validate-manifest,assess-permissions}.mjs` import the host's compiled

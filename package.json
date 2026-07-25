@@ -13,7 +13,6 @@
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build:frontend && npm run build:backend",
     "build:frontend": "npm run build -w @vpnpoppy/frontend",
-    "build:sidecar": "node scripts/build-sidecar.mjs",
     "validate-manifest": "node scripts/validate-manifest.mjs",
     "assess-permissions": "node scripts/assess-permissions.mjs",
     "install-dev": "node \"${AGENTSPOPPY_DIR:-../agentspoppy}/scripts/install-dev-extension.mjs\" --src . --frontend frontend/dist --backend backend/index.cjs",
@@ -21,8 +20,7 @@
     "build:backend": "node scripts/build-backend-bundle.mjs"
   },
   "devDependencies": {
-    "esbuild": "^0.24.0",
-    "postject": "^1.0.0-alpha.6"
+    "esbuild": "^0.24.0"
   },
   "license": "MIT",
   "optionalDependencies": {
