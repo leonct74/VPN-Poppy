@@ -470,3 +470,38 @@ endpoint → scan a device QR in the WireGuard app **on a phone on cellular** �
 handshake, browsing works, and the phone's public IP is the endpoint's → tear down
 clean. Coordinated with the founder, never simulated (CLAUDE.md). Then P2 (cost meter +
 lifecycle + §1b panel + latency hints).
+
+### Helper prompt — onboarding by prompt, not by manual: ✅ built (2026-07-30)
+
+New platform requirement, **AGENTS.md §9 + §10 checklist**. The launch form now hands the user
+a prompt that IS the onboarding: paste it into any AI, say what the VPN is for, get back the
+region, slot count, lifecycle and shield decision to set here.
+
+- **INLINE variant, not banner** (`btn btn-sm btn-primary poppy-helper-pulse`), beside the
+  "Launch a VPN endpoint" title. The card already carries the Premium panel *and* the cost
+  banner inside a narrow frame (`.app` is 860 px max, `.grid-2` collapses at 540 px) — a third
+  strip would be banner-on-banner. Pulses until first used, `Copied ✓` feedback, copied through
+  `CopyButton`'s now-exported `copyText` so the sandboxed WKWebView can't make it a dead button.
+- **Generated, never hand-written (rule 1).** The form's labels, bounds and defaults moved out
+  of JSX into `types.ts`: `LAUNCH_FIELDS` (region/name/deviceSlots/lifecycle, incl. the 1–20
+  slot range, 1–720 h range, the 8 h and 10-slot defaults and the `eu-central-1` fallback),
+  `SHIELDED_DNS`, `COST_FACTS` and `WIREGUARD_NOTE`. `LaunchForm` and `ShieldedDnsToggle` render
+  them; `helper-prompt.ts` describes them. Regions come straight from `REGIONS`, and the prompt
+  forbids recommending one that isn't listed.
+- **The §1b/§2 copy rules are the constraints (rule 2), and this is the real point here.** An
+  outside AI asked "which region for Netflix?" will cheerfully invent an answer, so the prompt
+  pre-empts it: **not a streaming unblocker** (AWS ranges are blocklisted — say so *first*, and
+  "do not pick a region as though it would work"), **not a censorship-circumvention tool**, the
+  honest word is **"private", not "anonymous"**, and nobody can honestly sell invisibility from a
+  legal order. Also carried: the **no-SSH invariant** (nothing may suggest logging into the box),
+  **teardown-only** lifecycle (no Stop button by design), the datacenter-IP CAPTCHA side effect,
+  device keys generated on the user's own machine, and cost shown as arithmetic rather than a
+  confident monthly total. Pinned by tests, so a future copy edit can't quietly drop them.
+- **WireGuard named honestly** as the per-device prerequisite with the exact step — free, open
+  source, *not a VPN company*, and the config file is a password.
+- Answer shape leads with **"Does VPN-Poppy actually suit what I asked for?"** — "Say this FIRST
+  and don't soften it" — then 7 items mapping onto the form. ≤3 clarifying questions first.
+  Ends mid-sentence on `MY VPN IS FOR: `.
+- Re-vendored the kit's `.poppy-helper-pulse` into `frontend/src/poppy.css`; **gave the frontend
+  its first test setup** (`vitest` + `test` script — the string builder needs no jsdom). 11 new
+  tests. Frontend-only, no AWS surface touched, so no founder gate applied.

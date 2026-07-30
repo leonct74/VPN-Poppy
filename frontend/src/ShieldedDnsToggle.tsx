@@ -1,5 +1,5 @@
 import { host } from "./host";
-import { SHIELD_PRODUCT_ID, formatPrice, billingNote, type PurchasePrice } from "./types";
+import { SHIELDED_DNS, SHIELD_PRODUCT_ID, formatPrice, billingNote, type PurchasePrice } from "./types";
 
 interface Props {
   checked: boolean;
@@ -58,12 +58,11 @@ export function ShieldedDnsToggle({ checked, onChange, disabled, entitled, purch
         </span>
         <span className="shield-copy">
           <span className="shield-head">
-            <strong>Shielded DNS</strong>
+            <strong>{SHIELDED_DNS.label}</strong>
             <span className={`shield-state${blocking ? " danger" : ""}`}>{stateLabel}</span>
           </span>
           <span className="shield-sub muted">
-            Block ads, trackers &amp; malware on every connected device, in every app — no browser extension, nothing to
-            install. Pages load faster and lighter, too: blocked ads and trackers are never downloaded.{" "}
+            {SHIELDED_DNS.what}{" "}
             {entitled === true ? (
               <>Adds ~30–60s to launch.</>
             ) : price ? (

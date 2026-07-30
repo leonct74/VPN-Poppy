@@ -145,3 +145,79 @@ export function formatUsd(n: number): string {
 export function isRunning(e: EndpointSummary): boolean {
   return e.state === "running" || e.state === "pending";
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   The launch form's own words + bounds, extracted from LaunchForm's JSX so the
+   form and the helper prompt read from ONE catalogue (AGENTS.md §9, rule 1 — a
+   hand-maintained second copy would drift, and a helper that recommends a
+   setting the form doesn't have is worse than no helper).
+   ────────────────────────────────────────────────────────────────────────── */
+
+/** Every field the launch form renders, with the bounds it enforces. */
+export const LAUNCH_FIELDS = {
+  region: {
+    label: "Region — where your traffic exits to the internet",
+    what:
+      "Websites will see this location and an AWS address, not your home address. Nearer usually means faster; " +
+      "further away is what you pick when you want to appear somewhere specific.",
+    fallback: "eu-central-1",
+  },
+  name: {
+    label: "Name (optional) — just a label for you",
+    what: "Yours alone, so you can tell endpoints apart. It has no effect on anything.",
+    placeholder: "e.g. Airport",
+  },
+  deviceSlots: {
+    label: "Device slots",
+    what:
+      "Unlimited devices — slots are just free keys generated up front. Phone, laptop, tablet… scan a QR or " +
+      "download a config for each. Adding more later needs a ~60 second relaunch, so it's cheapest to ask for " +
+      "a few spare now.",
+    min: 1,
+    max: 20,
+    default: 10,
+  },
+  lifecycle: {
+    label: "Lifecycle",
+    autoLabel: "Auto tear down after",
+    keepLabel: "Keep running until I tear it down",
+    what:
+      "Auto tear down is the safe default: the endpoint destroys itself after the hours you set and billing " +
+      "stops. Keeping it running means you must tear it down yourself — there is no Stop button, because a " +
+      "stopped instance still isn't free.",
+    minHours: 1,
+    maxHours: 720,
+    defaultHours: 8,
+  },
+} as const;
+
+/** The premium option, in the toggle's own words (rendered by ShieldedDnsToggle). */
+export const SHIELDED_DNS = {
+  label: "Shielded DNS",
+  what:
+    "Block ads, trackers & malware on every connected device, in every app — no browser extension, nothing to " +
+    "install. Pages load faster and lighter, too: blocked ads and trackers are never downloaded.",
+  caution:
+    "It is a paid subscription and it adds ~30–60s to launch. Selecting it without a subscription BLOCKS the " +
+    "Launch button until you either subscribe or turn it off — there is no preview or trial-by-selecting.",
+};
+
+/** The cost sentence's parts. Rates are approximate (DESIGN §4 tracks the live Price List API). */
+export const COST_FACTS = {
+  egressPerGb: 0.09,
+  freeEgressGbPerMonth: 100,
+  note:
+    "An evening of browsing is well under a GB — cents. A live meter shows the real number once it's up.",
+};
+
+/** WireGuard is a prerequisite, not a vendor — and saying so honestly is the rule
+ *  (AGENTS.md §9: name the dependency and the exact step). */
+export const WIREGUARD_NOTE = {
+  step:
+    "Each device needs the free, official WireGuard app installed first (App Store, Google Play, or " +
+    "wireguard.com for desktop). Then scan the QR code, or import the .conf file, that VPN-Poppy shows for " +
+    "that device slot.",
+  note:
+    "WireGuard is free and open-source — not a VPN company, and not a subscription. The config file it imports " +
+    "contains a private key, so treat it like a password: anyone who has it can use your tunnel.",
+};

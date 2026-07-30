@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { copyText } from "./CopyButton";
 import { ShieldedDnsToggle } from "./ShieldedDnsToggle";
-import { DEFAULT_INSTANCE, HOURLY_USD, IPV4_HOURLY_USD, REGIONS, formatUsd, type EndpointConfig, type PurchasePrice } from "./types";
+import { buildHelperPrompt } from "./helper-prompt";
+import { COST_FACTS, DEFAULT_INSTANCE, HOURLY_USD, IPV4_HOURLY_USD, LAUNCH_FIELDS, REGIONS, formatUsd, type EndpointConfig, type PurchasePrice } from "./types";
 
 interface Props {
   busy: boolean;
@@ -15,14 +17,47 @@ interface Props {
   shieldPrice: PurchasePrice | null;
 }
 
+/**
+ * "Copy the helper prompt" — the INLINE variant (AGENTS.md §9). Inline rather than a banner
+ * because this card is already carrying a premium panel and a cost banner in a narrow frame;
+ * a third strip would be banner-on-banner. Sits beside the card's own title. Pulses until
+ * first used; the kit's class holds still under prefers-reduced-motion.
+ */
+function HelperPromptButton(props: { homeRegion?: string; shieldPurchasable: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const [used, setUsed] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  async function copy() {
+    const ok = await copyText(buildHelperPrompt(props));
+    setUsed(true);
+    setCopied(ok);
+    setFailed(!ok);
+    window.setTimeout(() => {
+      setCopied(false);
+      setFailed(false);
+    }, 2500);
+  }
+
+  return (
+    <button
+      className={`btn btn-sm btn-primary${used ? "" : " poppy-helper-pulse"}`}
+      onClick={copy}
+      title="Copies a prompt that explains this form. Paste it into any AI, say what you want the VPN for, and it tells you what to set."
+    >
+      {copied ? "Copied ✓" : failed ? "Select & copy manually" : "✨ Copy the helper prompt"}
+    </button>
+  );
+}
+
 /** The deploy card (DESIGN §7): pick a region, choose device slots + lifecycle, one button. */
 export function LaunchForm({ busy, onLaunch, homeRegion, shieldEntitled, shieldPurchasable, shieldPrice }: Props) {
-  const defaultRegion = REGIONS.some((r) => r.id === homeRegion) ? homeRegion! : "eu-central-1";
+  const defaultRegion = REGIONS.some((r) => r.id === homeRegion) ? homeRegion! : LAUNCH_FIELDS.region.fallback;
   const [name, setName] = useState("");
   const [region, setRegion] = useState(defaultRegion);
-  const [deviceSlots, setDeviceSlots] = useState(10);
+  const [deviceSlots, setDeviceSlots] = useState<number>(LAUNCH_FIELDS.deviceSlots.default);
   const [autoTeardown, setAutoTeardown] = useState(true);
-  const [hours, setHours] = useState(8);
+  const [hours, setHours] = useState<number>(LAUNCH_FIELDS.lifecycle.defaultHours);
   const [shieldedDns, setShieldedDns] = useState(false);
 
   const hourly = (HOURLY_USD[DEFAULT_INSTANCE.instanceType] ?? 0) + IPV4_HOURLY_USD;
@@ -45,11 +80,14 @@ export function LaunchForm({ busy, onLaunch, homeRegion, shieldEntitled, shieldP
 
   return (
     <div className="card">
-      <h2 className="section-title">Launch a VPN endpoint</h2>
+      <div className="spread" style={{ marginBottom: 10 }}>
+        <h2 className="section-title" style={{ margin: 0 }}>Launch a VPN endpoint</h2>
+        <HelperPromptButton homeRegion={homeRegion} shieldPurchasable={shieldPurchasable} />
+      </div>
 
       <div className="grid-2">
         <label className="field">
-          <span>Region — where your traffic exits to the internet</span>
+          <span>{LAUNCH_FIELDS.region.label}</span>
           <select className="select" value={region} onChange={(e) => setRegion(e.target.value)} disabled={busy}>
             {REGIONS.map((r) => (
               <option key={r.id} value={r.id}>
@@ -60,10 +98,10 @@ export function LaunchForm({ busy, onLaunch, homeRegion, shieldEntitled, shieldP
         </label>
 
         <label className="field">
-          <span>Name (optional) — just a label for you</span>
+          <span>{LAUNCH_FIELDS.name.label}</span>
           <input
             className="input"
-            placeholder="e.g. Airport"
+            placeholder={LAUNCH_FIELDS.name.placeholder}
             value={name}
             onChange={(e) => setName(e.target.value)}
             disabled={busy}
@@ -72,12 +110,14 @@ export function LaunchForm({ busy, onLaunch, homeRegion, shieldEntitled, shieldP
       </div>
 
       <label className="field">
-        <span>Device slots — {deviceSlots} (add more anytime with a ~60s relaunch)</span>
+        <span>
+          {LAUNCH_FIELDS.deviceSlots.label} — {deviceSlots} (add more anytime with a ~60s relaunch)
+        </span>
         <input
           className="input"
           type="range"
-          min={1}
-          max={20}
+          min={LAUNCH_FIELDS.deviceSlots.min}
+          max={LAUNCH_FIELDS.deviceSlots.max}
           value={deviceSlots}
           onChange={(e) => setDeviceSlots(Number(e.target.value))}
           disabled={busy}
@@ -89,16 +129,16 @@ export function LaunchForm({ busy, onLaunch, homeRegion, shieldEntitled, shieldP
       </label>
 
       <label className="field">
-        <span>Lifecycle</span>
+        <span>{LAUNCH_FIELDS.lifecycle.label}</span>
         <div className="row" style={{ gap: 16 }}>
           <label className="row" style={{ gap: 6 }}>
             <input type="radio" checked={autoTeardown} onChange={() => setAutoTeardown(true)} disabled={busy} />
-            <span>Auto tear down after</span>
+            <span>{LAUNCH_FIELDS.lifecycle.autoLabel}</span>
             <input
               className="input"
               type="number"
-              min={1}
-              max={720}
+              min={LAUNCH_FIELDS.lifecycle.minHours}
+              max={LAUNCH_FIELDS.lifecycle.maxHours}
               value={hours}
               onChange={(e) => setHours(Number(e.target.value))}
               disabled={busy || !autoTeardown}
@@ -108,7 +148,7 @@ export function LaunchForm({ busy, onLaunch, homeRegion, shieldEntitled, shieldP
           </label>
           <label className="row" style={{ gap: 6 }}>
             <input type="radio" checked={!autoTeardown} onChange={() => setAutoTeardown(false)} disabled={busy} />
-            <span>Keep running until I tear it down</span>
+            <span>{LAUNCH_FIELDS.lifecycle.keepLabel}</span>
           </label>
         </div>
       </label>
@@ -127,8 +167,8 @@ export function LaunchForm({ busy, onLaunch, homeRegion, shieldEntitled, shieldP
 
       <div className="banner info" style={{ margin: "8px 0 14px" }}>
         <strong>≈ {formatUsd(hourly)}/hr</strong> while running ({DEFAULT_INSTANCE.instanceType} + public IP, approx) — plus
-        data transfer out at ~$0.09/GB (first 100 GB/mo free). An evening of browsing is well under a GB — cents.{" "}
-        <span className="muted">A live meter shows the real number once it's up.</span>
+        data transfer out at ~${COST_FACTS.egressPerGb.toFixed(2)}/GB (first {COST_FACTS.freeEgressGbPerMonth} GB/mo
+        free). {COST_FACTS.note}
       </div>
 
       <div className="row" style={{ gap: 12 }}>
