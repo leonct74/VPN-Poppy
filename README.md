@@ -22,4 +22,10 @@ sold through AgentsPoppy's in-app checkout.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Source-available under the **[PolyForm Shield License 1.0.0](https://polyformproject.org/licenses/shield/1.0.0/)**
+— see [`LICENSE`](./LICENSE). Read it, run it, self-host it, change it, and use it for any
+purpose *except* building a product that competes with VPN-Poppy or with any other product
+we provide using it. The VPN-Poppy name and brand are not licensed with the code.
+
+(`frontend/src/poppy.css` is the AgentsPoppy design kit, vendored in under its own MIT
+header — that file keeps its MIT terms.)
