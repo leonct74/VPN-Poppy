@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Feedback } from "./Feedback";
 import { api } from "./api";
 import { host, type AccessState } from "./host";
 import { LaunchForm } from "./LaunchForm";
@@ -225,6 +226,9 @@ export function App() {
       ) : (
         live.map((e) => <EndpointCard key={e.instanceId} endpoint={e} onChanged={refresh} />)
       )}
+
+      {/* Mandatory in every poppy, and always LAST (AGENTS.md §9a). */}
+      <div className="card" style={{ marginTop: 18 }}><Feedback /></div>
     </div>
   );
 }

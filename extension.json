@@ -2,13 +2,18 @@
   "id": "com.vpnpoppy.desktop",
   "name": "VPN-Poppy",
   "version": "0.1.5",
-  "description": "A personal VPN on the fly in your own AWS — one-click WireGuard endpoints on a t4g.nano, no SSH, QR/.conf for unlimited devices, live cost meter, teardown whenever or after N hours you set.",
+  "description": "A personal VPN on the fly in your own AWS \u2014 one-click WireGuard endpoints on a t4g.nano, no SSH, QR/.conf for unlimited devices, live cost meter, teardown whenever or after N hours you set.",
+  "bugsUrl": "https://github.com/leonct74/VPN-Poppy/issues",
   "icon": "frontend/vpnpoppy-icon.png",
   "permissionSet": {
     "id": "vpnpoppy-backend",
     "name": "VPN-Poppy backend",
     "description": "Launch and manage a single EC2 endpoint it creates, scoped to its own tagged resources. Reads/creates on EC2; every change or delete is limited to instances and security groups tagged as its own. Reads CloudWatch metrics for the cost meter. No IAM, no key pairs, no account/org access.",
-    "requiredTags": ["agentspoppy:account", "agentspoppy:app", "agentspoppy:connection"],
+    "requiredTags": [
+      "agentspoppy:account",
+      "agentspoppy:app",
+      "agentspoppy:connection"
+    ],
     "grants": [
       {
         "service": "ec2",
@@ -42,7 +47,9 @@
       },
       {
         "service": "cloudwatch",
-        "actions": ["GetMetricData"],
+        "actions": [
+          "GetMetricData"
+        ],
         "resourceScope": "*"
       }
     ],
@@ -65,6 +72,7 @@
     "backend:invoke",
     "host:openExternal",
     "host:notify",
-    "commerce:purchase"
+    "commerce:purchase",
+    "feedback:submit"
   ]
 }
