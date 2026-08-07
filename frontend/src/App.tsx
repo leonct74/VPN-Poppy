@@ -27,6 +27,9 @@ export function App() {
   const [endpoints, setEndpoints] = useState<EndpointSummary[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [launching, setLaunching] = useState(false);
+  // Two tabs, because the Feedback tab is mandatory and must be the LAST one (AGENTS.md §9a).
+  // Panels stay MOUNTED (hidden), so endpoint polling keeps running while you're on Feedback.
+  const [tab, setTab] = useState<"vpn" | "feedback">("vpn");
   // Shielded DNS purchase gate — null = still loading (AGENTS.md §11, verified server-side).
   const [shieldEntitled, setShieldEntitled] = useState<boolean | null>(null);
   const [shieldPurchasable, setShieldPurchasable] = useState(false);
@@ -182,6 +185,25 @@ export function App() {
         </div>
       )}
 
+      <div className="tabs" role="tablist" aria-label="VPN-Poppy sections" style={{ marginBottom: 14 }}>
+        {([["vpn", "Your VPN"], ["feedback", "Feedback"]] as const).map(([key, label]) => (
+          <button
+            key={key}
+            role="tab"
+            aria-selected={tab === key}
+            className={`tab${tab === key ? " active" : ""}`}
+            onClick={() => setTab(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div hidden={tab !== "feedback"}>
+        <Feedback />
+      </div>
+
+      <div hidden={tab !== "vpn"}>
       {live.length === 0 && (
         <div className="banner info" style={{ marginBottom: 14 }}>
           A VPN endpoint that exists only while you need it. Launch one before you join the airport Wi-Fi; tear it down
@@ -226,9 +248,7 @@ export function App() {
       ) : (
         live.map((e) => <EndpointCard key={e.instanceId} endpoint={e} onChanged={refresh} />)
       )}
-
-      {/* Mandatory in every poppy, and always LAST (AGENTS.md §9a). */}
-      <div className="card" style={{ marginTop: 18 }}><Feedback /></div>
+      </div>
     </div>
   );
 }
