@@ -288,6 +288,21 @@ AgentsPoppy first-party checkout (`kind=subscription`), like TrafficPoppy's True
 
 ## 14. Status
 
+- 2026-08-20 — **0.1.8 BUILT — the confinement MIGRATION release (not yet confined;
+  `agentspoppy/docs/CONFINEMENT-MIGRATION.md`, the VM-Poppy 0.1.11→0.1.12 pattern).**
+  Everything on disk — the 0600 device-key store (`deployments/*.json`) and the
+  teardown-sweep region pointer (`regions.json`) — moves from `~/.vpnpoppy` to the host's
+  data folder (`backend/src/storage.ts::initStorage(bootstrap.dataDir)`, one-time
+  idempotent per-file copy, old folder never touched; `VPNPOPPY_HOME` still overrides).
+  Every existence probe goes through `exists()` — under `--permission`, `existsSync` on a
+  denied path THROWS, and the worst silent casualty would have been `loadUsedRegions()`
+  reading as `[]`, i.e. the LEAVES-NO-TRACE SWEEP quietly missing regions. Rig-proven both
+  ways: unconfined against the real `~/.vpnpoppy` (5 files moved: regions.json + 4
+  deployments; legacy untouched) and confined (boots, /health 200, no migration attempted).
+  Drive-by fix: ec2.test.ts wrote a fake `i-123.json` into the REAL `~/.vpnpoppy` on every
+  test run (the keystore's import-time default) — tests now get their own temp storage.
+  **0.1.9 = `isolation: "strict"` + catalogue `minHost 0.3.1`, gated on 0.1.8 having run
+  once on the founder's machine.**
 **Design COMPLETE — all §10 questions answered and locked in §11 (2026-07-18).**
 
 ### Backlog — reusable saved configs + a stable endpoint address (deferred 2026-07-20)

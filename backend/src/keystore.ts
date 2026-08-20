@@ -9,13 +9,15 @@
 // Keyed by the AWS instance id (never a wall-clock value), so re-runs can't duplicate or
 // silently regenerate identities (CLAUDE.md gotcha #3).
 
-import { mkdirSync, readFileSync, writeFileSync, existsSync, rmSync, readdirSync, chmodSync } from "node:fs";
-import { homedir } from "node:os";
+import { mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync, chmodSync } from "node:fs";
 import { join } from "node:path";
+import { exists, storageHome } from "./storage";
 import type { DevicePeer } from "./wireguard";
 
-const HOME = process.env.VPNPOPPY_HOME || join(homedir(), ".vpnpoppy");
-const DEPLOYMENTS_DIR = join(HOME, "deployments");
+// Where "here" is (and the one-time move out of ~/.vpnpoppy) lives in storage.ts.
+function deploymentsDir(): string {
+  return join(storageHome(), "deployments");
+}
 
 /** The persisted record for one launched endpoint (no server private key — see file note). */
 export interface Deployment {
@@ -28,11 +30,11 @@ export interface Deployment {
 }
 
 function deploymentPath(instanceId: string): string {
-  return join(DEPLOYMENTS_DIR, `${instanceId}.json`);
+  return join(deploymentsDir(), `${instanceId}.json`);
 }
 
 export function saveDeployment(d: Deployment): void {
-  mkdirSync(DEPLOYMENTS_DIR, { recursive: true });
+  mkdirSync(deploymentsDir(), { recursive: true });
   const path = deploymentPath(d.instanceId);
   writeFileSync(path, JSON.stringify(d, null, 2));
   chmodSync(path, 0o600); // device private keys — owner-only
@@ -40,7 +42,7 @@ export function saveDeployment(d: Deployment): void {
 
 export function loadDeployment(instanceId: string): Deployment | null {
   const path = deploymentPath(instanceId);
-  if (!existsSync(path)) return null;
+  if (!exists(path)) return null; // exists(): under --permission existsSync THROWS on a denied path
   try {
     return JSON.parse(readFileSync(path, "utf8")) as Deployment;
   } catch {
@@ -53,8 +55,8 @@ export function deleteDeployment(instanceId: string): void {
 }
 
 export function listDeploymentIds(): string[] {
-  if (!existsSync(DEPLOYMENTS_DIR)) return [];
-  return readdirSync(DEPLOYMENTS_DIR)
+  if (!exists(deploymentsDir())) return [];
+  return readdirSync(deploymentsDir())
     .filter((f) => f.endsWith(".json"))
     .map((f) => f.slice(0, -".json".length));
 }

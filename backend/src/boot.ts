@@ -10,6 +10,13 @@ export interface BackendBootstrap {
   credentialsUrl: string;
   credentialsToken?: string;
   port?: number;
+  /**
+   * The private, per-poppy folder the host created for us (0700) — once the backend is
+   * confined (0.1.9), the ONLY place outside the OS temp dir it may write. Device keys
+   * and the region pointer live here (storage.ts). Absent only on a host too old to send
+   * it, which is also a host too old to confine us.
+   */
+  dataDir?: string;
   account: { accountId: string; region: string };
 }
 

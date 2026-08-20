@@ -1,4 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { beforeEach, describe, it, expect } from "vitest";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { initStorage } from "./storage";
 import { Ec2Service } from "./ec2";
 import { TAG_APP, TAG_NAME, TAG_REGION } from "./tags";
 
@@ -35,6 +39,10 @@ function fakeEc2() {
 const ctx = { accountId: "111122223333", connectionId: "conn-abc", region: "eu-central-1" };
 
 describe("Ec2Service.launch — the no-SSH invariant", () => {
+  // launch() persists the deployment record — give each test its own storage home.
+  // (Before 0.1.8 the keystore silently defaulted to the REAL ~/.vpnpoppy, and these
+  // tests wrote a fake i-123.json into it — the throw that exposed this is deliberate.)
+  beforeEach(() => initStorage(mkdtempSync(join(tmpdir(), "vpnpoppy-ec2test-"))));
   it("NEVER creates a key pair and passes NO KeyName to RunInstances", async () => {
     const { client, sent } = fakeEc2();
     await new Ec2Service(client, ctx).launch({ region: "eu-central-1", instanceType: "t4g.nano", arch: "arm64", deviceSlots: 10 });

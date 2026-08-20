@@ -6,18 +6,22 @@
 // teardown hook can sweep every region it ever touched (the leaves-no-trace guarantee,
 // AGENTS.md §4). Lives under ~/.vpnpoppy so nothing extra is provisioned in AWS.
 
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
-import { homedir } from "node:os";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { exists, storageHome } from "./storage";
 
-const HOME = process.env.VPNPOPPY_HOME || join(homedir(), ".vpnpoppy");
-const REGIONS_FILE = join(HOME, "regions.json");
+// Where "here" is (and the one-time move out of ~/.vpnpoppy) lives in storage.ts. This
+// file feeds the TEARDOWN SWEEP — losing it silently is a broken leaves-no-trace, which
+// is exactly what confining the old ~/.vpnpoppy path would have done.
+function regionsFile(): string {
+  return join(storageHome(), "regions.json");
+}
 
 /** Regions we've launched into (persisted). Empty if nothing has been launched yet. */
 export function loadUsedRegions(): string[] {
-  if (!existsSync(REGIONS_FILE)) return [];
+  if (!exists(regionsFile())) return []; // exists(): existsSync THROWS on a denied path
   try {
-    const parsed = JSON.parse(readFileSync(REGIONS_FILE, "utf8"));
+    const parsed = JSON.parse(readFileSync(regionsFile(), "utf8"));
     return Array.isArray(parsed) ? parsed.filter((r): r is string => typeof r === "string") : [];
   } catch {
     return [];
@@ -29,6 +33,6 @@ export function rememberRegion(region: string): void {
   const all = new Set(loadUsedRegions());
   if (all.has(region)) return;
   all.add(region);
-  mkdirSync(HOME, { recursive: true });
-  writeFileSync(REGIONS_FILE, JSON.stringify([...all], null, 2));
+  mkdirSync(storageHome(), { recursive: true });
+  writeFileSync(regionsFile(), JSON.stringify([...all], null, 2));
 }

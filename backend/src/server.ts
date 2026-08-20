@@ -8,11 +8,18 @@ import { EC2Client } from "@aws-sdk/client-ec2";
 import { readBootstrap, brokerCredentialsProvider } from "./boot";
 import { Ec2Service } from "./ec2";
 import { loadUsedRegions, rememberRegion } from "./store";
+import { initStorage } from "./storage";
 import { loadDeployment, renameDevice } from "./keystore";
 import { buildDeviceConfig } from "./wireguard";
 import type { EndpointConfig } from "./types";
 
 const boot = readBootstrap();
+// Before any route: point key/region storage at the host's data folder and carry a
+// pre-0.1.8 ~/.vpnpoppy across (one-time, idempotent, best-effort — see storage.ts).
+const storage = initStorage(boot.dataDir);
+if (storage.migrated.length) {
+  console.log(`[vpnpoppy] moved ${storage.migrated.length} file(s) from ~/.vpnpoppy into ${storage.home}`);
+}
 const credentials = brokerCredentialsProvider(boot);
 
 /** A per-region EC2 client, so an endpoint can be launched/managed in any region the user
