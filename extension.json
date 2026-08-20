@@ -1,7 +1,7 @@
 {
   "id": "com.vpnpoppy.desktop",
   "name": "VPN-Poppy",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "A personal VPN on the fly in your own AWS \u2014 one-click WireGuard endpoints on a t4g.nano, no SSH, QR/.conf for unlimited devices, live cost meter, teardown whenever or after N hours you set.",
   "bugsUrl": "https://github.com/leonct74/VPN-Poppy/issues",
   "icon": "frontend/vpnpoppy-icon.png",
@@ -61,7 +61,8 @@
   "backend": {
     "entry": "backend/index.cjs",
     "transport": "http",
-    "runtime": "node22"
+    "runtime": "node22",
+    "isolation": "strict"
   },
   "teardown": {
     "endpoint": "/teardown"
