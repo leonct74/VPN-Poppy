@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ExternalLink } from "./ExternalLink";
 import { Feedback } from "./Feedback";
 import { api } from "./api";
 import { host, type AccessState } from "./host";
@@ -248,6 +249,15 @@ export function App() {
       ) : (
         live.map((e) => <EndpointCard key={e.instanceId} endpoint={e} onChanged={refresh} />)
       )}
+      {/* Founder rule (2026-08-22), for every first-party poppy: the app is a tool acting in
+          the user's own accounts, provided as-is — its records are theirs to review, and
+          malfunctions or wrong use are not something Olly Digital answers for. */}
+      <p className="muted" style={{ fontSize: 11.5, marginTop: 14 }}>
+        VPNPoppy runs in your own AWS account and is provided &ldquo;as is&rdquo; under the{" "}
+        <ExternalLink href="https://agentspoppy.com/terms">AgentsPoppy Terms</ExternalLink>. The
+        endpoints it launches, what you route through them, and the hours they bill are yours to
+        watch — and yours.
+      </p>
       </div>
     </div>
   );
