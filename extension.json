@@ -33,7 +33,7 @@
           "CreateSecurityGroup",
           "CreateTags"
         ],
-        "resourceScope": "*"
+        "resourceScope": "tagged-as-self"
       },
       {
         "service": "ec2",
