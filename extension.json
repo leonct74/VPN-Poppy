@@ -2,7 +2,7 @@
   "id": "com.vpnpoppy.desktop",
   "name": "VPN-Poppy",
   "version": "0.1.10",
-  "description": "A personal VPN on the fly in your own AWS \u2014 one-click WireGuard endpoints on a t4g.nano, no SSH, QR/.conf for unlimited devices, live cost meter, teardown whenever or after N hours you set.",
+  "description": "A personal VPN on the fly in your own AWS — one-click WireGuard endpoints on a t4g.nano, no SSH, QR/.conf for unlimited devices, live cost meter, teardown whenever or after N hours you set.",
   "bugsUrl": "https://github.com/leonct74/VPN-Poppy/issues",
   "icon": "frontend/vpnpoppy-icon.png",
   "permissionSet": {
@@ -24,7 +24,8 @@
           "DescribeSubnets",
           "DescribeSecurityGroups"
         ],
-        "resourceScope": "*"
+        "resourceScope": "*",
+        "reason": "Reads the images, networks and firewall rules already in your account so it can offer you real choices when you set a VPN up, and reads server state to show you what it is running. AWS publishes no resource type for these list calls, so they cannot be limited to VpnPoppy's own resources. Everything it creates, changes or deletes is in the tag-scoped grants, so this one can look but never touch."
       },
       {
         "service": "ec2",
@@ -44,13 +45,6 @@
           "GetConsoleOutput"
         ],
         "resourceScope": "tagged-as-self"
-      },
-      {
-        "service": "cloudwatch",
-        "actions": [
-          "GetMetricData"
-        ],
-        "resourceScope": "*"
       }
     ],
     "limits": null
