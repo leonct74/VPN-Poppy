@@ -53,6 +53,11 @@
       "infrastructure": "servers"
     }
   },
+  "compliance": {
+    "dataHandled": "WireGuard keys and endpoint configuration, created and stored only in your own AWS account. No traffic, connection logs or keys ever reach the developer.",
+    "subprocessors": [],
+    "securityContact": "support@agentspoppy.com"
+  },
   "frontend": {
     "entry": "frontend/index.html"
   },
