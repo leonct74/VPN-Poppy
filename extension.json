@@ -25,7 +25,7 @@
           "DescribeSecurityGroups"
         ],
         "resourceScope": "*",
-        "reason": "Reads the images, networks and firewall rules already in your account so it can offer you real choices when you set a VPN up, and reads server state to show you what it is running. AWS publishes no resource type for these list calls, so they cannot be limited to VpnPoppy's own resources. Everything it creates, changes or deletes is in the tag-scoped grants, so this one can look but never touch."
+        "reason": "Looks at the networks, system images and firewall settings already in your account, to offer you real choices when you set a VPN up — and checks on the servers it runs. It can look, never touch: every change it makes is covered by other, tighter permissions."
       },
       {
         "service": "ec2",
