@@ -1,8 +1,8 @@
 {
   "id": "com.vpnpoppy.desktop",
   "name": "VPN-Poppy",
-  "version": "0.1.10",
-  "description": "A personal VPN on the fly in your own AWS \u2014 one-click WireGuard endpoints on a t4g.nano, no SSH, QR/.conf for unlimited devices, live cost meter, teardown whenever or after N hours you set.",
+  "version": "0.1.11",
+  "description": "A personal VPN on the fly in your own AWS — one-click WireGuard endpoints on a t4g.nano, no SSH, QR/.conf for unlimited devices, live cost meter, teardown whenever or after N hours you set.",
   "bugsUrl": "https://github.com/leonct74/VPN-Poppy/issues",
   "icon": "frontend/vpnpoppy-icon.png",
   "permissionSet": {
@@ -25,7 +25,7 @@
           "DescribeSecurityGroups"
         ],
         "resourceScope": "*",
-        "reason": "Looks at the networks, system images and firewall settings already in your account, to offer you real choices when you set a VPN up \u2014 and checks on the servers it runs. It can look, never touch: every change it makes is covered by other, tighter permissions."
+        "reason": "Looks at the networks, system images and firewall settings already in your account, to offer you real choices when you set a VPN up — and checks on the servers it runs. It can look, never touch: every change it makes is covered by other, tighter permissions."
       },
       {
         "service": "ec2",
